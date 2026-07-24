@@ -39,6 +39,12 @@ const Sound = (() => {
     fanfare() {
       [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.22));
     },
+    levelup() {
+      [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.1, 0.25));
+    },
+    badge() {
+      tone(784, 0, 0.15); tone(988, 0.12, 0.15); tone(1319, 0.24, 0.3);
+    },
     setMuted(v) { muted = v; },
     isMuted() { return muted; },
   };

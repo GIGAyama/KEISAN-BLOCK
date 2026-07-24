@@ -2,38 +2,85 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff9f43">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="さんすうブロック">
 <title>さんすうブロック - けいさんれんしゅう</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='18' fill='%23ff9f43'/><rect x='26' y='26' width='48' height='48' rx='10' fill='%23fff' opacity='.35'/></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
 
-  <!-- ホーム画面 -->
+  <!-- ============ ホーム（ダッシュボード） ============ -->
   <section id="screen-home" class="screen active">
-    <div class="title-blocks" aria-hidden="true">
-      <span class="tb tb-a"></span><span class="tb tb-b"></span><span class="tb tb-c"></span>
+    <header class="home-header">
+      <div class="logo">
+        <span class="logo-block lb-a"></span><span class="logo-block lb-b"></span>
+        <span class="logo-text">さんすうブロック</span>
+      </div>
+      <button class="icon-btn" id="btn-sound" aria-label="おとの おん・おふ">🔊</button>
+    </header>
+
+    <div class="level-card">
+      <div class="level-chip">Lv.<span id="level-num">1</span></div>
+      <div class="level-info">
+        <div class="level-title" id="level-title">けいさん みならい</div>
+        <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+        <div class="xp-text" id="xp-text"></div>
+      </div>
     </div>
-    <h1 class="app-title">さんすうブロック</h1>
-    <p class="app-sub">ブロックと さくらんぼで<br>くりあがり・くりさがりを マスターしよう！</p>
-    <div class="menu">
-      <button class="menu-btn menu-add" data-goto="add">
-        <span class="menu-main">たしざん</span>
-        <span class="menu-small">くりあがりの けいさん</span>
+
+    <div class="mission-card">
+      <svg class="mission-ring" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+        <circle class="ring-fg" id="ring-fg" cx="50" cy="50" r="42"></circle>
+        <text id="ring-text" x="50" y="47" text-anchor="middle">0/10</text>
+        <text class="ring-label" x="50" y="64" text-anchor="middle">もん</text>
+      </svg>
+      <div class="mission-info">
+        <div class="mission-title">きょうの ミッション</div>
+        <div class="mission-desc">1にち <b>10もん</b> といて スタンプを あつめよう！</div>
+        <div class="day-streak" id="day-streak">🔥 れんぞく 0にち</div>
+      </div>
+    </div>
+
+    <div class="mode-grid">
+      <button class="mode-card mc-add" data-goto="add">
+        <span class="mode-emoji">🍒</span>
+        <span class="mode-name">たしざん</span>
+        <span class="mode-desc">くりあがり</span>
       </button>
-      <button class="menu-btn menu-sub" data-goto="sub-select">
-        <span class="menu-main">ひきざん</span>
-        <span class="menu-small">くりさがりの けいさん</span>
+      <button class="mode-card mc-sub" data-goto="sub-select">
+        <span class="mode-emoji">🔟</span>
+        <span class="mode-name">ひきざん</span>
+        <span class="mode-desc">くりさがり</span>
       </button>
-      <button class="menu-btn menu-rec" data-goto="records">
-        <span class="menu-main">きろく</span>
-        <span class="menu-small">がんばりを みてみよう</span>
+      <button class="mode-card mc-timed" data-goto="timed">
+        <span class="mode-emoji">⚡</span>
+        <span class="mode-name">タイムアタック</span>
+        <span class="mode-desc">あんざんで しょうぶ！</span>
+      </button>
+      <button class="mode-card mc-dev" data-goto="dev-select">
+        <span class="mode-emoji">🚀</span>
+        <span class="mode-name">はってん</span>
+        <span class="mode-desc">おおきな かずに ちょうせん</span>
+      </button>
+      <button class="mode-card mc-rec wide" data-goto="records">
+        <span class="mode-emoji">📊</span>
+        <span class="mode-name">きろく</span>
+        <span class="mode-desc">マップ・カレンダー・バッジ</span>
       </button>
     </div>
+
+    <button id="btn-install" class="install-btn" hidden>📲 アプリを インストール</button>
   </section>
 
-  <!-- ひきざん ほうほうえらび -->
+  <!-- ============ ひきざん ほうほうえらび ============ -->
   <section id="screen-sub-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home">←</button>
@@ -57,34 +104,114 @@
     </div>
   </section>
 
-  <!-- れんしゅう画面 -->
+  <!-- ============ はってん えらび ============ -->
+  <section id="screen-dev-select" class="screen">
+    <header class="simple-header">
+      <button class="icon-btn btn-back" data-goto="home">←</button>
+      <h2>🚀 はってんもんだい</h2>
+    </header>
+    <p class="select-note">おおきな かずでも「10の まとまり」の かんがえかたが つかえるよ！</p>
+    <div class="menu">
+      <button class="menu-btn menu-add" data-mode="dev-add">
+        <span class="menu-main">たしざん</span>
+        <span class="menu-small">2けた ＋ 1けた（くりあがり）</span>
+        <span class="menu-example">25＋8, 47＋6 …</span>
+      </button>
+      <button class="menu-btn menu-gengen" data-mode="dev-sub">
+        <span class="menu-main">ひきざん</span>
+        <span class="menu-small">2けた − 1けた（くりさがり）</span>
+        <span class="menu-example">33−6, 52−7 …</span>
+      </button>
+      <button class="menu-btn menu-mix" data-mode="dev-mix">
+        <span class="menu-main">ミックス</span>
+        <span class="menu-small">たしざんも ひきざんも</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ れんしゅう画面 ============ -->
   <section id="screen-play" class="screen">
     <header class="play-header">
       <button class="icon-btn btn-back" data-goto="quit">←</button>
-      <div id="star-row" aria-label="せいかいの かず"></div>
+      <div id="play-info">
+        <div id="star-row" aria-label="せいかいの かず"></div>
+        <div id="timed-info" hidden>
+          <span id="timed-progress">1/10</span>
+          <span id="timed-clock">0.0</span>
+        </div>
+      </div>
       <div id="streak-badge" title="れんぞく せいかい">🔥<span id="streak-num">0</span></div>
-      <button class="icon-btn" id="btn-sound" aria-label="おと">🔊</button>
+      <button class="icon-btn btn-sound-play" aria-label="おと">🔊</button>
     </header>
 
-    <div id="method-badge"></div>
-    <div id="equation" aria-live="polite"></div>
-
-    <div id="block-stage">
-      <div id="frame-area"></div>
-      <div id="loose-area"></div>
+    <div id="play-main">
+      <div id="play-left">
+        <div id="method-badge"></div>
+        <div id="equation" aria-live="polite"></div>
+        <div id="block-stage">
+          <div id="rod-area"></div>
+          <div id="frame-area"></div>
+          <div id="loose-area"></div>
+        </div>
+      </div>
+      <div id="play-right">
+        <div id="prompt-box">
+          <p id="prompt"></p>
+          <div id="answer-display" class="waiting">?</div>
+        </div>
+        <div id="feedback" aria-live="assertive"></div>
+        <div id="keypad"></div>
+      </div>
     </div>
-
-    <div id="prompt-box">
-      <p id="prompt"></p>
-      <div id="answer-display" class="waiting">?</div>
-    </div>
-
-    <div id="feedback" aria-live="assertive"></div>
-
-    <div id="keypad"></div>
   </section>
 
-  <!-- せいかいオーバーレイ -->
+  <!-- ============ きろく画面 ============ -->
+  <section id="screen-records" class="screen">
+    <header class="simple-header">
+      <button class="icon-btn btn-back" data-goto="home">←</button>
+      <h2>がんばりの きろく</h2>
+    </header>
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="stats">せいせき</button>
+      <button class="tab-btn" data-tab="map">マップ</button>
+      <button class="tab-btn" data-tab="calendar">カレンダー</button>
+      <button class="tab-btn" data-tab="badges">バッジ</button>
+    </nav>
+
+    <div id="tab-stats" class="tab-panel active">
+      <div id="records-list"></div>
+      <button id="btn-reset-records" class="danger-btn">きろくを ぜんぶ けす</button>
+    </div>
+
+    <div id="tab-map" class="tab-panel">
+      <p class="map-note">けいさんカードの マップだよ。<br>
+        <span class="cell-sample cs-green"></span>ばっちり
+        <span class="cell-sample cs-yellow"></span>もうすこし
+        <span class="cell-sample cs-red"></span>にがて
+        <span class="cell-sample cs-gray"></span>まだ
+      </p>
+      <h3 class="map-title">🍒 たしざん</h3>
+      <div class="map-scroll"><div id="map-add" class="fact-map"></div></div>
+      <h3 class="map-title">🔟 ひきざん</h3>
+      <div class="map-scroll"><div id="map-sub" class="fact-map"></div></div>
+    </div>
+
+    <div id="tab-calendar" class="tab-panel">
+      <div class="cal-nav">
+        <button class="icon-btn" id="cal-prev">◀</button>
+        <div id="cal-title">2026ねん 7がつ</div>
+        <button class="icon-btn" id="cal-next">▶</button>
+      </div>
+      <div id="calendar" class="calendar"></div>
+      <p class="cal-legend">⭐＝ミッションたっせい　✅＝れんしゅうした ひ</p>
+    </div>
+
+    <div id="tab-badges" class="tab-panel">
+      <div id="badge-list" class="badge-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ オーバーレイ ============ -->
   <div id="overlay-correct" class="overlay">
     <div class="overlay-card">
       <div id="correct-text" class="big-praise">せいかい！</div>
@@ -94,36 +221,40 @@
     </div>
   </div>
 
-  <!-- セットクリア -->
   <div id="overlay-set" class="overlay">
     <div class="overlay-card">
       <div class="big-praise">5もん クリア！</div>
       <div id="set-stars" class="set-stars"></div>
       <p id="set-message">よく がんばったね！</p>
       <div class="overlay-btns">
-        <button class="menu-btn menu-add" id="btn-continue">
-          <span class="menu-main">つづける</span>
-        </button>
-        <button class="menu-btn menu-rec" id="btn-set-home">
-          <span class="menu-main">ホームへ</span>
-        </button>
+        <button class="menu-btn menu-add" id="btn-continue"><span class="menu-main">つづける</span></button>
+        <button class="menu-btn menu-rec" id="btn-set-home"><span class="menu-main">ホームへ</span></button>
       </div>
     </div>
   </div>
 
-  <!-- きろく画面 -->
-  <section id="screen-records" class="screen">
-    <header class="simple-header">
-      <button class="icon-btn btn-back" data-goto="home">←</button>
-      <h2>がんばりの きろく</h2>
-    </header>
-    <div id="records-list"></div>
-    <button id="btn-reset-records" class="danger-btn">きろくを けす</button>
-  </section>
+  <div id="overlay-result" class="overlay">
+    <div class="overlay-card">
+      <div class="big-praise">⚡ ゴール！</div>
+      <div id="result-stars" class="set-stars"></div>
+      <div class="result-rows">
+        <div class="result-row"><span>タイム</span><b id="result-time">--</b></div>
+        <div class="result-row"><span>まちがい</span><b id="result-miss">0</b></div>
+        <div class="result-row"><span>さいこうきろく</span><b id="result-best">--</b></div>
+      </div>
+      <div class="overlay-btns">
+        <button class="menu-btn menu-add" id="btn-retry"><span class="menu-main">もういちど</span></button>
+        <button class="menu-btn menu-rec" id="btn-result-home"><span class="menu-main">ホームへ</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-area" aria-live="polite"></div>
 
 </div>
 <script src="js/audio.js"></script>
 <script src="js/blocks.js"></script>
+<script src="js/storage.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
