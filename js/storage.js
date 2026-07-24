@@ -200,10 +200,8 @@ const Store = (() => {
     const t = data.modes.timed;
     const events = [];
     t.plays++;
-    if (misses === 0) {
-      t.perfect++;
-      if (!t.bestMs || ms < t.bestMs) t.bestMs = ms;
-    }
+    if (misses === 0) t.perfect++;
+    if (!t.bestMs || ms < t.bestMs) t.bestMs = ms;
     const b1 = earnBadgeInto(events, "timedClear");
     if (misses === 0) earnBadgeInto(events, "timedPerfect");
     save();

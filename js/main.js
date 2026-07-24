@@ -36,6 +36,7 @@
     setSolved: 0,
     streak: 0,
     lastKey: "",
+    session: 0,      // れんしゅうセッションの識別子（quit後の遅延コールバック暴発防止）
     // タイムアタック
     timedIndex: 0,
     timedMisses: 0,
@@ -66,17 +67,17 @@
 
   // ---------- もんだいの 生成 ----------
   // 基本のたしざん: a 6〜9, a+b≧11 ／ 基本のひきざん: a 11〜18, くりさがり必須
-  function allAddFacts() {
+  const ADD_FACTS = (() => {
     const out = [];
     for (let a = 6; a <= 9; a++) for (let b = 11 - a; b <= 9; b++) out.push([a, b]);
     return out;
-  }
+  })();
 
-  function allSubFacts() {
+  const SUB_FACTS = (() => {
     const out = [];
     for (let a = 11; a <= 18; a++) for (let b = a - 10 + 1; b <= 9; b++) out.push([a, b]);
     return out;
-  }
+  })();
 
   function factKeyOf(type, a, b) {
     return type === "add" ? `A${a}+${b}` : `S${a}-${b}`;
@@ -84,7 +85,7 @@
 
   /** にがてカードを 35%の かくりつで まぜる 適応出題 */
   function pickFact(type) {
-    const pool = type === "add" ? allAddFacts() : allSubFacts();
+    const pool = type === "add" ? ADD_FACTS : SUB_FACTS;
     const prefix = type === "add" ? "A" : "S";
     const weak = Store.weakFacts(prefix);
     if (weak.length > 0 && Math.random() < 0.35) {
@@ -131,9 +132,8 @@
         }
       }
       const key = `${p.type}:${p.a}:${p.b}`;
-      if (key !== state.lastKey) { state.lastKey = key; return p; }
+      if (key !== state.lastKey || tries === 29) { state.lastKey = key; return p; }
     }
-    return generateProblem(mode);
   }
 
   // ---------- もんだいの 描画 ----------
@@ -414,6 +414,7 @@
 
   // ---------- れんしゅうの 進行 ----------
   function startMode(mode) {
+    state.session++;
     state.mode = mode;
     state.setSolved = 0;
     state.streak = 0;
@@ -520,7 +521,9 @@
         Sound.correct();
         setFeedback(pick(PRAISES), "good");
       }
+      const sess = state.session;
       await step.after?.();
+      if (sess !== state.session) return; // アニメ中に やめた
       state.stepIndex++;
       if (state.stepIndex >= state.steps.length) problemDone();
       else showStep();
@@ -541,13 +544,16 @@
     void disp.offsetWidth;
     disp.classList.add("shake");
 
+    const sess = state.session;
     if (!isTimed() && state.wrongCount >= 3) {
       // 3回 まちがえたら こたえを 見せて すすむ
       state.buffer = String(step.answer);
       renderBuffer();
       setFeedback(`こたえは ${step.answer} だよ。いっしょに すすもう！`, "bad");
       setTimeout(async () => {
+        if (sess !== state.session) return; // すでに やめている
         await step.after?.();
+        if (sess !== state.session) return;
         state.stepIndex++;
         if (state.stepIndex >= state.steps.length) problemDone();
         else showStep();
@@ -559,6 +565,7 @@
       setFeedback(msg, "bad");
       state.buffer = "";
       setTimeout(() => {
+        if (sess !== state.session) return;
         renderBuffer();
         state.accepting = true;
       }, 350);
@@ -594,8 +601,10 @@
     $("#correct-text").textContent = state.firstTry ? "せいかい！" : "できたね！";
     const overlay = $("#overlay-correct");
     overlay.classList.add("show");
+    const sess = state.session;
     setTimeout(() => {
       overlay.classList.remove("show");
+      if (sess !== state.session) return;
       if (state.setSolved >= SET_SIZE) showSetComplete();
       else nextProblem();
     }, 1400);
@@ -612,7 +621,8 @@
       finishTimed();
     } else {
       setFeedback(pick(PRAISES), "good");
-      setTimeout(nextProblem, 350);
+      const sess = state.session;
+      setTimeout(() => { if (sess === state.session) nextProblem(); }, 350);
     }
   }
 
@@ -709,6 +719,8 @@
     const circumference = 2 * Math.PI * 42;
     ring.style.strokeDasharray = circumference;
     ring.style.strokeDashoffset = circumference * (1 - done / target);
+    // 進捗0のときは round linecap の点が残らないよう非表示にする
+    ring.style.opacity = done === 0 ? "0" : "1";
     $("#ring-text").textContent = today.mission ? "クリア!" : `${done}/${target}`;
     ring.classList.toggle("done", today.mission);
 
@@ -894,7 +906,13 @@
         const dest = btn.dataset.goto;
         if (dest === "add") return startMode("add");
         if (dest === "timed") return startMode("timed");
-        if (dest === "quit") { stopTimer(); return showScreen("home"); }
+        if (dest === "quit") {
+          state.session++;        // 遅延コールバックを 無効化
+          state.accepting = false;
+          stopTimer();
+          document.body.classList.remove("timed-mode");
+          return showScreen("home");
+        }
         if (dest === "records") {
           renderRecords(); renderMaps(); initCalendar(); renderCalendar(); renderBadges();
         }
@@ -961,11 +979,11 @@
       }
     });
 
-    // キーボードでも 入力できるように（PCむけ）
+    // キーボードでも 入力できるように（PC・外付けキーボードむけ）
     document.addEventListener("keydown", (e) => {
       if (!$("#screen-play").classList.contains("active")) return;
       if (e.key >= "0" && e.key <= "9") onDigit(e.key);
-      else if (e.key === "Backspace") onDelete();
+      else if (e.key === "Backspace") { e.preventDefault(); onDelete(); }
       else if (e.key === "Enter") onOk();
     });
   }

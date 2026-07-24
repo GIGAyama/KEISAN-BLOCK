@@ -19,16 +19,12 @@
   --slot-line: #b9c4d0;
   --radius: 18px;
   --shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
-  --slot-size: 40px;
-  --block-size: 32px;
-}
-
-@media (max-width: 480px) {
-  :root { --slot-size: 31px; --block-size: 25px; }
-}
-
-@media (max-width: 370px) {
-  :root { --slot-size: 27px; --block-size: 21px; }
+  /* 端末幅に応じて なめらかに拡大縮小する流体サイズ */
+  --slot-size: clamp(32px, 9.5vw, 54px);
+  --block-size: calc(var(--slot-size) - 8px);
+  --eq-font: clamp(38px, 11vw, 66px);
+  --key-h: clamp(54px, 9.5vmin, 78px);
+  --key-font: clamp(24px, 4.8vmin, 34px);
 }
 
 * {
@@ -48,10 +44,20 @@ body {
   font-family: "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Rounded Mplus 1c",
     "Yu Gothic", "Meiryo", sans-serif;
   color: var(--ink);
-  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)) fixed;
+  background: var(--bg-top);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* iOS Safari は background-attachment: fixed が使えないため固定レイヤーで描く */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
 #app {
@@ -434,6 +440,10 @@ body {
   flex-direction: column;
 }
 
+/* たて画面では キーパッドを 画面の下に よせて、親指で 押しやすくする */
+#play-right { flex: 1; }
+#play-right #keypad { margin-top: auto; }
+
 #method-badge {
   text-align: center;
   font-size: 13px;
@@ -450,15 +460,16 @@ body {
 
 #equation {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-  gap: 10px;
-  min-height: 118px;
+  gap: clamp(6px, 2vw, 12px);
+  min-height: clamp(100px, 27vw, 156px);
   margin-bottom: 4px;
 }
 
 body.timed-mode #equation {
-  min-height: 90px;
+  min-height: clamp(72px, 20vw, 110px);
   align-items: center;
 }
 
@@ -469,24 +480,24 @@ body.timed-mode #equation {
 }
 
 .eq-num, .eq-op, .eq-ans {
-  font-size: 44px;
+  font-size: var(--eq-font);
   font-weight: bold;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .eq-num {
   background: var(--paper);
-  border-radius: 14px;
-  padding: 0 14px;
+  border-radius: 0.3em;
+  padding: 0 0.28em;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .eq-ans {
   color: var(--purple);
   background: var(--paper);
-  border-radius: 14px;
-  padding: 0 14px;
-  min-width: 64px;
+  border-radius: 0.3em;
+  padding: 0 0.28em;
+  min-width: 1.5em;
   text-align: center;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
 }
@@ -495,7 +506,7 @@ body.timed-mode #equation {
 
 /* ---------- さくらんぼ ---------- */
 .cherry {
-  width: 120px;
+  width: clamp(92px, 25vw, 136px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -503,8 +514,8 @@ body.timed-mode #equation {
 }
 
 .cherry-stems {
-  width: 120px;
-  height: 26px;
+  width: 100%;
+  height: auto;
   display: block;
 }
 
@@ -516,19 +527,19 @@ body.timed-mode #equation {
 
 .cherry-pair {
   display: flex;
-  gap: 12px;
+  gap: clamp(8px, 2.5vw, 14px);
 }
 
 .cherry-circle {
-  width: 44px;
-  height: 44px;
+  width: clamp(40px, 11vw, 54px);
+  height: clamp(40px, 11vw, 54px);
   border-radius: 50%;
   background: var(--paper);
   border: 3px dashed var(--slot-line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: clamp(20px, 5.5vw, 27px);
   font-weight: bold;
   color: #aab;
 }
@@ -551,13 +562,13 @@ body.timed-mode #equation {
 #block-stage {
   background: rgba(255, 255, 255, 0.65);
   border-radius: var(--radius);
-  padding: 12px 10px;
+  padding: clamp(10px, 2vw, 16px) clamp(8px, 2vw, 14px);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 14px;
-  min-height: 120px;
+  gap: clamp(10px, 3vw, 20px);
+  min-height: clamp(110px, 28vw, 190px);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -571,7 +582,7 @@ body.timed-mode #block-stage { display: none; }
 }
 
 .ten-rod {
-  width: 22px;
+  width: clamp(20px, 4.8vw, 28px);
   height: calc(var(--slot-size) * 2 + 14px);
   background: linear-gradient(180deg, #ffb25e, var(--orange-dark));
   border-radius: 8px;
@@ -706,27 +717,27 @@ body.timed-mode #block-stage { display: none; }
   justify-content: center;
   gap: 14px;
   margin: 10px 0 4px;
-  min-height: 62px;
+  min-height: clamp(62px, 12vw, 80px);
 }
 
 #prompt {
-  font-size: 19px;
+  font-size: clamp(18px, 4.6vw, 23px);
   font-weight: bold;
   margin: 0;
   line-height: 1.5;
-  max-width: 340px;
+  max-width: 380px;
 }
 
 #answer-display {
-  min-width: 62px;
-  height: 56px;
+  min-width: clamp(62px, 15vw, 88px);
+  height: clamp(56px, 13vw, 78px);
   background: var(--paper);
   border: 3px solid var(--purple);
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: clamp(30px, 7.5vw, 44px);
   font-weight: bold;
   color: var(--purple);
   padding: 0 10px;
@@ -746,7 +757,7 @@ body.timed-mode #block-stage { display: none; }
 #feedback {
   text-align: center;
   min-height: 28px;
-  font-size: 17px;
+  font-size: clamp(16px, 4.2vw, 20px);
   font-weight: bold;
 }
 
@@ -757,33 +768,56 @@ body.timed-mode #block-stage { display: none; }
 #keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  max-width: 320px;
+  gap: clamp(8px, 1.8vmin, 14px);
+  max-width: min(440px, 100%);
   width: 100%;
-  margin: 8px auto 4px;
+  margin: 10px auto 4px;
+  touch-action: manipulation;
 }
 
 #keypad button {
   border: none;
-  border-radius: 14px;
-  height: 56px;
-  font-size: 26px;
+  border-radius: 16px;
+  height: var(--key-h);
+  min-height: 48px;
+  font-size: var(--key-font);
   font-weight: bold;
   font-family: inherit;
   background: var(--paper);
   color: var(--ink);
   box-shadow: var(--shadow);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 #keypad button:active { transform: translateY(3px); box-shadow: none; }
 
-#keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: 22px; }
+#keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: calc(var(--key-font) - 4px); }
 #keypad .key-ok { background: var(--green); color: #fff; }
 
 /* ---------- よこむき・タブレットの 2カラム ---------- */
 @media (min-width: 700px) {
+  :root {
+    /* 2カラムでは 式が左カラム（約半分）に入るため、カラム幅基準で調整 */
+    --eq-font: clamp(40px, 5.5vw, 60px);
+    --slot-size: clamp(36px, 4.5vw, 52px);
+  }
+
   #app { max-width: 1040px; }
+
+  .cherry { width: clamp(96px, 14vw, 136px); }
+  .cherry-circle {
+    width: clamp(40px, 5.5vw, 54px);
+    height: clamp(40px, 5.5vw, 54px);
+    font-size: clamp(20px, 2.8vw, 27px);
+  }
+
+  /* れんしゅう画面いがいは よみやすい はばに おさめる */
+  .screen:not(#screen-play) {
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
+  }
 
   #screen-play { padding: 14px 24px 20px; }
 
@@ -795,17 +829,19 @@ body.timed-mode #block-stage { display: none; }
 
   #play-left {
     flex: 1.2;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 6px;
   }
 
   #play-right {
     flex: 1;
-    max-width: 380px;
+    max-width: 420px;
     justify-content: center;
   }
 
-  #block-stage { min-height: 160px; }
+  #play-right #keypad { margin-top: 12px; }
+
+  #block-stage { min-height: clamp(160px, 24vw, 240px); }
 
   #prompt-box { flex-direction: column; gap: 10px; }
 
@@ -1031,16 +1067,16 @@ body.timed-mode #block-stage { display: none; }
 }
 
 .fact-map th {
-  font-size: 12px;
+  font-size: clamp(12px, 2.8vw, 15px);
   font-weight: bold;
   color: #778;
-  min-width: 26px;
-  height: 26px;
+  min-width: clamp(26px, 6vw, 36px);
+  height: clamp(26px, 6vw, 36px);
 }
 
 .fact-map td {
-  width: 26px;
-  height: 26px;
+  width: clamp(26px, 6vw, 36px);
+  height: clamp(26px, 6vw, 36px);
   border-radius: 6px;
 }
 
@@ -1127,10 +1163,22 @@ body.timed-mode #block-stage { display: none; }
   .badge-list { grid-template-columns: 1fr; }
 }
 
-/* ---------- せまい画面むけ ---------- */
-@media (max-height: 720px) and (max-width: 699px) {
-  #equation { min-height: 104px; }
-  .eq-num, .eq-op, .eq-ans { font-size: 36px; }
-  #keypad button { height: 48px; }
-  #block-stage { min-height: 104px; }
+/* ---------- せのひくい画面（よこむきスマホなど）むけ ---------- */
+@media (max-height: 560px) {
+  :root {
+    --eq-font: clamp(28px, 8vh, 44px);
+    --key-h: clamp(42px, 9vh, 54px);
+    --key-font: 22px;
+    --slot-size: clamp(26px, 6.5vh, 40px);
+  }
+  #equation { min-height: 80px; }
+  #block-stage { min-height: 88px; }
+  #prompt-box { margin: 4px 0 2px; min-height: 40px; }
+  #prompt { font-size: 16px; }
+  #answer-display { height: 46px; min-width: 58px; font-size: 26px; }
+  #feedback { min-height: 20px; font-size: 15px; }
+  #keypad { gap: 6px; margin-top: 4px; }
+  .play-header { margin-bottom: 2px; }
+  .cherry { width: 96px; }
+  .cherry-circle { width: 40px; height: 40px; font-size: 20px; }
 }
