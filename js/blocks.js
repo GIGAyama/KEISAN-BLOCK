@@ -100,6 +100,74 @@ const Blocks = (() => {
     });
   }
 
+  /** 10のぼう（はってんモード用）を count ほん ならべる */
+  function renderRods(container, count) {
+    container.innerHTML = "";
+    if (count <= 0) return [];
+    const group = document.createElement("div");
+    group.className = "rod-group";
+    const rods = [];
+    for (let i = 0; i < count; i++) {
+      const rod = makeRod();
+      group.appendChild(rod);
+      rods.push(rod);
+    }
+    container.appendChild(group);
+    return rods;
+  }
+
+  function makeRod() {
+    const rod = document.createElement("div");
+    rod.className = "ten-rod";
+    rod.innerHTML = '<span class="rod-label">10</span>';
+    return rod;
+  }
+
+  /** わくの 10こが 1本の ぼうに がったいする */
+  function collapseFrameToRod(frameSlots, rodContainer) {
+    return new Promise((resolve) => {
+      frameSlots.forEach((s, i) => {
+        const b = s.querySelector(".block");
+        if (b) setTimeout(() => b.classList.add("absorb"), i * 40);
+      });
+      setTimeout(() => {
+        frameSlots.forEach((s) => { const b = s.querySelector(".block"); if (b) b.remove(); });
+        let group = rodContainer.querySelector(".rod-group");
+        if (!group) {
+          group = document.createElement("div");
+          group.className = "rod-group";
+          rodContainer.appendChild(group);
+        }
+        const rod = makeRod();
+        rod.classList.add("pop");
+        group.appendChild(rod);
+        resolve(rod);
+      }, 10 * 40 + 350);
+    });
+  }
+
+  /** 1本の ぼうが わくの 10この ブロックに ばらける */
+  function breakRodToFrame(rodContainer, frameSlots, colorClass) {
+    return new Promise((resolve) => {
+      const rods = rodContainer.querySelectorAll(".ten-rod");
+      const rod = rods[rods.length - 1];
+      if (rod) {
+        rod.classList.add("absorb");
+        setTimeout(() => rod.remove(), 380);
+      }
+      setTimeout(() => {
+        frameSlots.forEach((s, i) => {
+          setTimeout(() => {
+            const b = makeBlock(colorClass);
+            b.classList.add("pop");
+            s.appendChild(b);
+          }, i * 45);
+        });
+        setTimeout(resolve, 10 * 45 + 320);
+      }, 320);
+    });
+  }
+
   /** さくらんぼ（2つの まる） */
   function makeCherry() {
     const root = document.createElement("div");
@@ -128,5 +196,8 @@ const Blocks = (() => {
     };
   }
 
-  return { renderTenFrame, renderLoose, flyBlock, flyAway, highlight, pulseBlocks, makeCherry };
+  return {
+    renderTenFrame, renderLoose, flyBlock, flyAway, highlight, pulseBlocks,
+    makeCherry, renderRods, collapseFrameToRod, breakRodToFrame,
+  };
 })();

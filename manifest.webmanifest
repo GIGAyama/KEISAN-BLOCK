@@ -1,0 +1,17 @@
+{
+  "name": "さんすうブロック - けいさんれんしゅう",
+  "short_name": "さんすうブロック",
+  "description": "算数ブロックとさくらんぼ計算で、繰り上がり・繰り下がりの計算をマスターする小学1年生向け学習アプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#cdeeff",
+  "theme_color": "#ff9f43",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
