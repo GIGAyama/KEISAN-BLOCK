@@ -19,16 +19,16 @@ const Store = (() => {
   ];
 
   const BADGES = [
-    { id: "first5", emoji: "🌸", name: "はじめの いっぽ", desc: "はじめて 5もん クリアした" },
-    { id: "solve50", emoji: "💪", name: "50もん とっぱ", desc: "ぜんぶで 50もん といた" },
-    { id: "solve200", emoji: "🏆", name: "200もん とっぱ", desc: "ぜんぶで 200もん といた" },
-    { id: "streak10", emoji: "🔥", name: "れんぞく 10もん", desc: "10もん れんぞくで せいかいした" },
-    { id: "days3", emoji: "📅", name: "3にち つづけた", desc: "3にち れんぞくで がくしゅうした" },
-    { id: "days7", emoji: "🌟", name: "1しゅうかん つづけた", desc: "7にち れんぞくで がくしゅうした" },
-    { id: "timedClear", emoji: "⚡", name: "スピードスター", desc: "タイムアタックを クリアした" },
-    { id: "timedPerfect", emoji: "💎", name: "パーフェクト", desc: "タイムアタックを ノーミスで クリアした" },
-    { id: "devClear10", emoji: "🚀", name: "はってん チャレンジャー", desc: "はってんもんだいを 10もん といた" },
-    { id: "map20", emoji: "🗺️", name: "マップたんけんか", desc: "けいさんマップで 20マスを ばっちりにした" },
+    { id: "first5", icon: "flower", name: "はじめの いっぽ", desc: "はじめて 5もん クリアした" },
+    { id: "solve50", icon: "medal", name: "50もん とっぱ", desc: "ぜんぶで 50もん といた" },
+    { id: "solve200", icon: "trophy", name: "200もん とっぱ", desc: "ぜんぶで 200もん といた" },
+    { id: "streak10", icon: "flame", name: "れんぞく 10もん", desc: "10もん れんぞくで せいかいした" },
+    { id: "days3", icon: "calendar", name: "3にち つづけた", desc: "3にち れんぞくで がくしゅうした" },
+    { id: "days7", icon: "sparkle", name: "1しゅうかん つづけた", desc: "7にち れんぞくで がくしゅうした" },
+    { id: "timedClear", icon: "bolt", name: "スピードスター", desc: "タイムアタックを クリアした" },
+    { id: "timedPerfect", icon: "gem", name: "パーフェクト", desc: "タイムアタックを ノーミスで クリアした" },
+    { id: "devClear10", icon: "rocket", name: "はってん チャレンジャー", desc: "はってんもんだいを 10もん といた" },
+    { id: "map20", icon: "map", name: "マップたんけんか", desc: "けいさんマップで 20マスを ばっちりにした" },
   ];
 
   function defaults() {
