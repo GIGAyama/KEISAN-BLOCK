@@ -936,31 +936,40 @@ body.timed-mode #block-stage { display: none; }
 
 .big-praise .icon { vertical-align: -3px; }
 
-.confetti {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
+/* ---------- 紙吹雪（せいかい・クリアの おいわい） ---------- */
+#confetti-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 150;
 }
 
-.confetti span { animation: bob 1s ease-in-out infinite; }
+.confetti-piece {
+  position: absolute;
+  top: -14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall linear forwards;
+}
 
-.confetti .icon { display: block; width: 26px; height: 26px; }
+.confetti-piece.round { border-radius: 50%; }
 
-.cf-1 { color: #ffb400; }
-.cf-2 { color: var(--blue); }
-.cf-3 { color: var(--pink); }
-.cf-4 { color: var(--green); }
-.cf-5 { color: var(--purple); }
+@keyframes confetti-fall {
+  0% {
+    transform: translate(0, 0) rotate(0) rotateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--drift), 105vh) rotate(var(--spin)) rotateX(680deg);
+    opacity: 1;
+  }
+}
 
 .confetti span:nth-child(2) { animation-delay: 0.1s; }
 .confetti span:nth-child(3) { animation-delay: 0.2s; }
 .confetti span:nth-child(4) { animation-delay: 0.3s; }
 .confetti span:nth-child(5) { animation-delay: 0.4s; }
-
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
 
 .set-stars {
   display: flex;

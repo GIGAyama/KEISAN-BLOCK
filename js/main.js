@@ -69,6 +69,29 @@
     if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) { /* 無視 */ } }
   }
 
+  // ---------- 紙吹雪 ----------
+  const CONFETTI_COLORS = ["#ffb400", "#4aa3ff", "#ff7eb3", "#2ecc71", "#a06cd5", "#ff9f43"];
+
+  /** 画面のうえから 紙吹雪を ふらせて おいわいする */
+  function burstConfetti(count) {
+    const layer = $("#confetti-layer");
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement("span");
+      p.className = "confetti-piece" + (Math.random() < 0.35 ? " round" : "");
+      const size = 6 + Math.random() * 7;
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.width = size + "px";
+      p.style.height = (Math.random() < 0.5 ? size : size * 1.7) + "px";
+      p.style.background = pick(CONFETTI_COLORS);
+      p.style.animationDelay = Math.random() * 0.3 + "s";
+      p.style.animationDuration = 1.1 + Math.random() * 0.9 + "s";
+      p.style.setProperty("--drift", Math.random() * 160 - 80 + "px");
+      p.style.setProperty("--spin", Math.random() * 720 - 360 + "deg");
+      layer.appendChild(p);
+      setTimeout(() => p.remove(), 2400);
+    }
+  }
+
   // ---------- もんだいの 生成 ----------
   // 基本のたしざん: a 6〜9, a+b≧11 ／ 基本のひきざん: a 11〜18, くりさがり必須
   const ADD_FACTS = (() => {
@@ -605,6 +628,7 @@
     $("#correct-text").textContent = state.firstTry ? "せいかい！" : "できたね！";
     const overlay = $("#overlay-correct");
     overlay.classList.add("show");
+    burstConfetti(32);
     const sess = state.session;
     setTimeout(() => {
       overlay.classList.remove("show");
@@ -649,6 +673,7 @@
       icon("star", "st-on").repeat(stars) + icon("star-o", "st-off").repeat(3 - stars);
     Sound.fanfare();
     $("#overlay-result").classList.add("show");
+    burstConfetti(60);
   }
 
   function showSetComplete() {
@@ -657,6 +682,7 @@
     const total = Store.totalSolved();
     $("#set-message").textContent = `いままでに ぜんぶで ${total}もん といたよ！`;
     $("#overlay-set").classList.add("show");
+    burstConfetti(60);
   }
 
   function updateStreak() {
