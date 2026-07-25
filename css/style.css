@@ -32,6 +32,19 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ---------- SVGアイコン（線画・currentColor） ---------- */
+.icon {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
 [hidden] { display: none !important; }
 
 html, body {
@@ -223,7 +236,9 @@ body::before {
 }
 
 .day-streak {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 6px;
   background: #fff1e2;
   border-radius: 999px;
@@ -261,7 +276,7 @@ body::before {
 
 .mode-card.wide { grid-column: 1 / -1; }
 
-.mode-emoji { font-size: 30px; }
+.mode-icon { width: 32px; height: 32px; margin-bottom: 3px; }
 .mode-name { font-size: 19px; font-weight: bold; }
 .mode-desc { font-size: 12px; opacity: 0.92; }
 
@@ -283,7 +298,12 @@ body::before {
   border-radius: 999px;
   box-shadow: var(--shadow);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
+
+.install-btn .icon { width: 18px; height: 18px; color: var(--blue-dark); }
 
 /* ---------- メニュー（やりかたえらび） ---------- */
 .menu {
@@ -351,6 +371,15 @@ body::before {
   margin: 0;
 }
 
+.simple-header h2 .h-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: -4px;
+}
+
+.ic-dev { color: var(--green-dark); }
+.ic-timed { color: #e8a10e; }
+
 .play-header {
   display: flex;
   align-items: center;
@@ -370,7 +399,12 @@ body::before {
   cursor: pointer;
   box-shadow: var(--shadow);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.icon-btn .icon { width: 22px; height: 22px; }
 
 .icon-btn:active { transform: translateY(2px); box-shadow: none; }
 
@@ -383,7 +417,13 @@ body::before {
 #star-row {
   display: flex;
   gap: 6px;
-  font-size: 24px;
+}
+
+#star-row .icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  color: #ffb400;
 }
 
 #star-row .star { opacity: 0.25; transition: opacity 0.3s, transform 0.3s; }
@@ -426,6 +466,15 @@ body::before {
   font-size: 16px;
   font-weight: bold;
   box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+#streak-badge .icon {
+  width: 18px;
+  height: 18px;
+  color: #ff7b2e;
 }
 
 /* ---------- 問題エリア ---------- */
@@ -457,6 +506,10 @@ body::before {
   padding: 3px 14px;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
 }
+
+#method-badge .icon { width: 14px; height: 14px; vertical-align: -2px; }
+.ic-add { color: #e0508a; }
+.ic-sub { color: var(--blue-dark); }
 
 #equation {
   display: flex;
@@ -794,6 +847,7 @@ body.timed-mode #block-stage { display: none; }
 
 #keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: calc(var(--key-font) - 4px); }
 #keypad .key-ok { background: var(--green); color: #fff; }
+#keypad .key-ok .icon { width: 28px; height: 28px; stroke-width: 2.6; vertical-align: middle; }
 
 /* ---------- よこむき・タブレットの 2カラム ---------- */
 @media (min-width: 700px) {
@@ -880,14 +934,23 @@ body.timed-mode #block-stage { display: none; }
   margin-bottom: 8px;
 }
 
+.big-praise .icon { vertical-align: -3px; }
+
 .confetti {
-  font-size: 28px;
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .confetti span { animation: bob 1s ease-in-out infinite; }
+
+.confetti .icon { display: block; width: 26px; height: 26px; }
+
+.cf-1 { color: #ffb400; }
+.cf-2 { color: var(--blue); }
+.cf-3 { color: var(--pink); }
+.cf-4 { color: var(--green); }
+.cf-5 { color: var(--purple); }
 
 .confetti span:nth-child(2) { animation-delay: 0.1s; }
 .confetti span:nth-child(3) { animation-delay: 0.2s; }
@@ -900,10 +963,16 @@ body.timed-mode #block-stage { display: none; }
 }
 
 .set-stars {
-  font-size: 34px;
-  letter-spacing: 4px;
-  margin: 6px 0;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin: 10px 0;
 }
+
+.set-stars .icon { width: 34px; height: 34px; }
+
+.st-on { color: #ffb400; }
+.st-off { color: #d9dee6; }
 
 #set-message { font-size: 16px; margin: 6px 0 16px; }
 
@@ -953,6 +1022,18 @@ body.timed-mode #block-stage { display: none; }
 }
 
 .toast.show { opacity: 1; transform: translateY(0); }
+
+.toast .icon {
+  width: 19px;
+  height: 19px;
+  margin-right: 6px;
+  vertical-align: -4px;
+}
+
+.t-amber { color: #ffb400; }
+.t-gold { color: #f4a924; }
+.t-purple { color: var(--purple); }
+.t-blue { color: var(--blue-dark); }
 
 .toast-mission { border-left-color: var(--green); }
 .toast-level { border-left-color: #f4a924; }
@@ -1058,6 +1139,10 @@ body.timed-mode #block-stage { display: none; }
   margin: 12px 0 6px;
 }
 
+.map-title .icon { width: 18px; height: 18px; vertical-align: -3px; }
+.mt-add { color: #e0508a; }
+.mt-sub { color: var(--blue-dark); }
+
 .map-scroll { overflow-x: auto; }
 
 .fact-map table {
@@ -1124,7 +1209,16 @@ body.timed-mode #block-stage { display: none; }
 .cal-today { outline: 3px solid var(--orange); }
 
 .cal-day { font-size: 12px; font-weight: bold; }
-.cal-stamp { font-size: 18px; }
+
+.cal-stamp {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.cal-stamp .icon { width: 17px; height: 17px; }
+.stamp-star { color: #ffb400; }
+.stamp-check { color: var(--green); }
 
 .cal-legend {
   text-align: center;
@@ -1132,6 +1226,8 @@ body.timed-mode #block-stage { display: none; }
   opacity: 0.75;
   margin-top: 10px;
 }
+
+.cal-legend .icon { width: 15px; height: 15px; vertical-align: -3px; }
 
 /* ---------- きろく：バッジ ---------- */
 .badge-list {
@@ -1153,7 +1249,21 @@ body.timed-mode #block-stage { display: none; }
 
 .badge-card.earned { opacity: 1; box-shadow: var(--shadow); }
 
-.badge-emoji { font-size: 30px; flex-shrink: 0; }
+.badge-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #f3eefb;
+  color: #8a53c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.badge-icon .icon { width: 26px; height: 26px; }
+
+.badge-icon.locked { background: #eef1f5; color: #9aa3ad; }
 
 .badge-text b { font-size: 13px; display: block; }
 .badge-text small { font-size: 11px; opacity: 0.75; display: block; line-height: 1.4; }

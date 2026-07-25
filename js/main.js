@@ -9,17 +9,21 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
 
+  /** SVGスプライトのアイコンをHTML文字列で返す */
+  const icon = (name, cls) =>
+    `<svg class="icon${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+
   const SET_SIZE = 5;        // ガイドつき 1セットの もんだい数
   const TIMED_COUNT = 10;    // タイムアタックの もんだい数
 
   const PRAISES = ["せいかい！", "すごい！", "やったね！", "いいね！", "そのちょうし！"];
 
   const METHOD_LABELS = {
-    add: "🍒 10の まとまりを つくろう",
-    genka: "🔟 げんかほう：10から ひいて たす",
-    gengen: "🍒 げんげんほう：じゅんばんに ひく",
-    "dev-add": "🚀 つぎの「なん10」を つくろう",
-    "dev-sub": "🚀 げんげんほうで じゅんばんに ひく",
+    add: `${icon("cherry", "ic-add")} 10の まとまりを つくろう`,
+    genka: `${icon("ten", "ic-sub")} げんかほう：10から ひいて たす`,
+    gengen: `${icon("cherry", "ic-add")} げんげんほう：じゅんばんに ひく`,
+    "dev-add": `${icon("rocket", "ic-dev")} つぎの「なん10」を つくろう`,
+    "dev-sub": `${icon("rocket", "ic-dev")} げんげんほうで じゅんばんに ひく`,
     timed: "",
   };
 
@@ -641,14 +645,15 @@
     $("#result-miss").textContent = state.timedMisses + "かい";
     const best = Store.data.modes.timed.bestMs;
     $("#result-best").textContent = best ? (best / 1000).toFixed(1) + "びょう" : "--";
-    $("#result-stars").textContent = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+    $("#result-stars").innerHTML =
+      icon("star", "st-on").repeat(stars) + icon("star-o", "st-off").repeat(3 - stars);
     Sound.fanfare();
     $("#overlay-result").classList.add("show");
   }
 
   function showSetComplete() {
     notifyBadge(Store.earnBadge("first5"));
-    $("#set-stars").textContent = "⭐".repeat(SET_SIZE);
+    $("#set-stars").innerHTML = icon("star", "st-on").repeat(SET_SIZE);
     const total = Store.totalSolved();
     $("#set-message").textContent = `いままでに ぜんぶで ${total}もん といたよ！`;
     $("#overlay-set").classList.add("show");
@@ -664,7 +669,7 @@
     for (let i = 0; i < SET_SIZE; i++) {
       const s = document.createElement("span");
       s.className = "star" + (i < state.setSolved ? " earned" : "");
-      s.textContent = "⭐";
+      s.innerHTML = icon("star");
       row.appendChild(s);
     }
   }
@@ -675,13 +680,13 @@
       setTimeout(() => {
         if (ev.type === "mission") {
           Sound.badge();
-          toast("⭐ きょうの ミッション たっせい！", "toast-mission");
+          toast(`${icon("star", "t-amber")}きょうの ミッション たっせい！`, "toast-mission");
         } else if (ev.type === "levelup") {
           Sound.levelup();
-          toast(`🎖️ レベルアップ！ Lv.${ev.level}「${ev.title}」`, "toast-level");
+          toast(`${icon("medal", "t-gold")}レベルアップ！ Lv.${ev.level}「${ev.title}」`, "toast-level");
         } else if (ev.type === "badge" && ev.badge) {
           Sound.badge();
-          toast(`${ev.badge.emoji} バッジかくとく「${ev.badge.name}」`, "toast-badge");
+          toast(`${icon(ev.badge.icon, "t-purple")}バッジかくとく「${ev.badge.name}」`, "toast-badge");
         }
       }, i * 900);
     });
@@ -691,11 +696,11 @@
     if (def) handleEvents([{ type: "badge", badge: def }]);
   }
 
-  function toast(text, cls) {
+  function toast(html, cls) {
     const area = $("#toast-area");
     const t = document.createElement("div");
     t.className = "toast " + (cls || "");
-    t.textContent = text;
+    t.innerHTML = html;
     area.appendChild(t);
     setTimeout(() => t.classList.add("show"), 20);
     setTimeout(() => {
@@ -724,7 +729,7 @@
     $("#ring-text").textContent = today.mission ? "クリア!" : `${done}/${target}`;
     ring.classList.toggle("done", today.mission);
 
-    $("#day-streak").textContent = `🔥 れんぞく ${Store.dayStreak()}にち`;
+    $("#day-streak").innerHTML = `${icon("flame")} れんぞく ${Store.dayStreak()}にち`;
   }
 
   // ---------- きろく画面 ----------
@@ -753,7 +758,7 @@
     const card = document.createElement("div");
     card.className = "record-card";
     card.innerHTML =
-      `<div class="record-name">⚡ タイムアタック<small>10もん あんざん</small></div>` +
+      `<div class="record-name">${icon("bolt", "ic-timed")} タイムアタック<small>10もん あんざん</small></div>` +
       `<div class="record-nums">ちょうせん <b>${t.plays}</b> かい<br>さいこうタイム <b>${t.bestMs ? (t.bestMs / 1000).toFixed(1) + "びょう" : "--"}</b></div>`;
     list.appendChild(card);
   }
@@ -816,7 +821,7 @@
       const rec = Store.data.days[key];
       const cell = document.createElement("div");
       cell.className = "cal-cell" + (key === todayStr ? " cal-today" : "");
-      cell.innerHTML = `<span class="cal-day">${d}</span><span class="cal-stamp">${rec ? (rec.mission ? "⭐" : "✅") : ""}</span>`;
+      cell.innerHTML = `<span class="cal-day">${d}</span><span class="cal-stamp">${rec ? (rec.mission ? icon("star", "stamp-star") : icon("check-circle", "stamp-check")) : ""}</span>`;
       cal.appendChild(cell);
     }
   }
@@ -830,7 +835,7 @@
       const card = document.createElement("div");
       card.className = "badge-card" + (got ? " earned" : "");
       card.innerHTML =
-        `<div class="badge-emoji">${got ? b.emoji : "❔"}</div>` +
+        `<div class="badge-icon${got ? "" : " locked"}">${icon(got ? b.icon : "help")}</div>` +
         `<div class="badge-text"><b>${b.name}</b><small>${b.desc}</small>${got ? `<small class="badge-date">${got}</small>` : ""}</div>`;
       list.appendChild(card);
     });
@@ -848,7 +853,8 @@
         btn.addEventListener("click", onDelete);
       } else if (k === "ok") {
         btn.className = "key-ok";
-        btn.textContent = "✓";
+        btn.innerHTML = icon("check");
+        btn.setAttribute("aria-label", "こたえる");
         btn.addEventListener("click", onOk);
       } else {
         btn.textContent = k;
@@ -863,7 +869,7 @@
     const muted = !Store.data.settings.sound;
     Sound.setMuted(muted);
     document.querySelectorAll("#btn-sound, .btn-sound-play").forEach((b) => {
-      b.textContent = muted ? "🔇" : "🔊";
+      b.innerHTML = icon(muted ? "volume-off" : "volume");
     });
   }
 
@@ -894,7 +900,7 @@
     });
     window.addEventListener("appinstalled", () => {
       $("#btn-install").hidden = true;
-      toast("📲 インストール ありがとう！", "toast-badge");
+      toast(`${icon("download", "t-blue")}インストール ありがとう！`, "toast-badge");
     });
   }
 
