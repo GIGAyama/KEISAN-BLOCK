@@ -19,6 +19,7 @@
 
   const SET_SIZE = 5;        // ガイドつき 1セットの もんだい数
   const TIMED_COUNT = 10;    // タイムアタックの もんだい数
+  const HOWTO_READ_SEC = 5;  // 「けいさんの しかた」を よむ じかん（このあいだは つぎへ すすめない）
 
   const PRAISES = ["せいかい！", "すごい！", "やったね！", "いいね！", "そのちょうし！"];
 
@@ -958,21 +959,59 @@
     overlay.classList.add("show");
     burstConfetti(32);
 
-    // 「けいさんの しかた」を よむ じかんを とる（タップすれば すぐ つぎへ）
+    // 「けいさんの しかた」が 出たときは 5びょうは かならず 見せる。
+    // 5びょう たつと「つぎへ」ボタンが おせるようになる。
     const sess = state.session;
     let advanced = false;
+    let timer = 0;
+    let tick = 0;
     const go = () => {
       if (advanced) return;
       advanced = true;
       clearTimeout(timer);
+      clearInterval(tick);
       overlay.onclick = null;
       overlay.classList.remove("show");
       if (sess !== state.session) return;
       if (state.setSolved >= SET_SIZE) showSetComplete();
       else nextProblem();
     };
-    const timer = setTimeout(go, withHowto ? 3000 : 1400);
-    overlay.onclick = go;
+
+    if (withHowto) {
+      const btn = $("#btn-howto-next");
+      const label = $("#howto-next-label");
+      const wait = $("#howto-wait");
+      const bar = $("#howto-wait-bar");
+      let left = HOWTO_READ_SEC;
+
+      btn.disabled = true;
+      btn.classList.remove("ready");
+      label.textContent = `あと ${left}びょう`;
+      btn.onclick = go;
+
+      // まちじかんの バーを もんだいごとに はじめから うごかす
+      wait.hidden = false;
+      bar.style.animation = "none";
+      void bar.offsetWidth;
+      bar.style.animation = `howto-wait-grow ${HOWTO_READ_SEC}s linear forwards`;
+
+      tick = setInterval(() => {
+        if (sess !== state.session) { clearInterval(tick); return; }
+        left--;
+        if (left > 0) {
+          label.textContent = `あと ${left}びょう`;
+          return;
+        }
+        clearInterval(tick);
+        wait.hidden = true;
+        btn.disabled = false;
+        btn.classList.add("ready");
+        label.innerHTML = `つぎへ ${icon("next")}`;
+      }, 1000);
+    } else {
+      timer = setTimeout(go, 1400);
+      overlay.onclick = go;
+    }
   }
 
   function timedProblemDone(p) {
