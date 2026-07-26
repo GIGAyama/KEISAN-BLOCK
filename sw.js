@@ -1,6 +1,6 @@
 /* さんすうブロック — Service Worker（オフライン対応） */
 
-const CACHE = "sansu-block-v6";
+const CACHE = "sansu-block-v7";
 
 const ASSETS = [
   "./",

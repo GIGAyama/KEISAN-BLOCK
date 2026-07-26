@@ -10,7 +10,7 @@ const Blocks = (() => {
   // ---------- かたまり（グループ）と かずの ひょうじ ----------
 
   /** ブロックの かたまりを 「なまえ＋いくつ」の ラベルつきの はこに いれる */
-  function makeGroup(container, contentEl, caption, countSel) {
+  function makeGroup(container, contentEl, caption, countSel, unit = "こ") {
     const wrap = document.createElement("div");
     wrap.className = "block-group";
     wrap.dataset.countSel = countSel;
@@ -18,7 +18,7 @@ const Blocks = (() => {
     if (caption) {
       const cap = document.createElement("div");
       cap.className = "group-caption";
-      cap.innerHTML = `${caption} <b class="cap-count">0</b>こ`;
+      cap.innerHTML = `${caption} <b class="cap-count">0</b>${unit}`;
       wrap.appendChild(cap);
     }
     container.appendChild(wrap);
@@ -223,16 +223,16 @@ const Blocks = (() => {
   }
 
   /** つぎに そうさする 1こを えらぶ（まとまりから とるときは うしろから） */
-  function nextTarget(slots, fromEnd) {
-    const filled = slots.filter((s) => s.querySelector(".block"));
+  function nextTarget(slots, fromEnd, itemSel = ".block") {
+    const filled = slots.filter((s) => s.querySelector(itemSel));
     return fromEnd ? filled[filled.length - 1] : filled[0];
   }
 
   /** まだ そうさして いない スロットを ゆらして 気づかせる */
-  function hintNext(slots, on, fromEnd) {
+  function hintNext(slots, on, fromEnd, itemSel = ".block") {
     slots.forEach((s) => s.classList.remove("hint"));
     if (!on) return;
-    const next = nextTarget(slots, fromEnd);
+    const next = nextTarget(slots, fromEnd, itemSel);
     if (next) next.classList.add("hint");
   }
 
@@ -270,7 +270,7 @@ const Blocks = (() => {
       group.appendChild(rod);
       rods.push(rod);
     }
-    makeGroup(container, group, caption, ".ten-rod");
+    makeGroup(container, group, caption, ".ten-rod", "ほん");
     return rods;
   }
 
@@ -279,6 +279,69 @@ const Blocks = (() => {
     rod.className = "ten-rod";
     rod.innerHTML = '<span class="rod-label">10</span>';
     return rod;
+  }
+
+  /**
+   * タップして うごかせる 10のぼうの かたまり。
+   * ぼうを 1本ずつ わくに いれて おくことで、ブロックと おなじように さわれる。
+   * opts.append を true に すると、いまの かたまりの となりに おきたす。
+   */
+  function addRodGroup(container, count, caption, opts = {}) {
+    if (!opts.append) container.innerHTML = "";
+    const group = document.createElement("div");
+    group.className = "rod-group";
+    const slots = [];
+    for (let i = 0; i < count; i++) {
+      const slot = document.createElement("div");
+      slot.className = "rod-slot";
+      slot.appendChild(makeRod());
+      group.appendChild(slot);
+      slots.push(slot);
+    }
+    makeGroup(container, group, caption, ".ten-rod", "ほん");
+    return { group, slots };
+  }
+
+  /** ぼうを 1本 となりの かたまりへ とばして いれる */
+  function moveRod(fromSlot, toGroup) {
+    return new Promise((resolve) => {
+      const rod = fromSlot.querySelector(".ten-rod");
+      if (!rod || !toGroup) { resolve(); return; }
+      const fr = rod.getBoundingClientRect();
+      const clone = rod.cloneNode(true);
+      clone.classList.add("flying");
+      clone.style.left = fr.left + "px";
+      clone.style.top = fr.top + "px";
+      document.body.appendChild(clone);
+      rod.remove();
+      // いきさきに さきに おいて、そこへ とばす
+      const placed = makeRod();
+      placed.style.visibility = "hidden";
+      toGroup.appendChild(placed);
+      requestAnimationFrame(() => {
+        const tr = placed.getBoundingClientRect();
+        clone.style.transform = `translate(${tr.left - fr.left}px, ${tr.top - fr.top}px)`;
+        setTimeout(() => {
+          clone.remove();
+          placed.style.visibility = "";
+          placed.classList.add("pop");
+          refreshCounts();
+          resolve();
+        }, FLY_MS + 60);
+      });
+    });
+  }
+
+  /** ぼうを 1本 とりのぞく（上へ とんでいく） */
+  function flyRodAway(slot, delay = 0) {
+    return new Promise((resolve) => {
+      const rod = slot.querySelector(".ten-rod");
+      if (!rod) { resolve(); return; }
+      setTimeout(() => {
+        rod.classList.add("fly-away");
+        setTimeout(() => { rod.remove(); refreshCounts(); resolve(); }, FLY_MS + 40);
+      }, delay);
+    });
   }
 
   /** まとまりの 10こが 1本の ぼうに がったいする */
@@ -365,5 +428,6 @@ const Blocks = (() => {
     flyBlock, flyAway, highlight, pulseBlocks, refreshCounts,
     enableTap, disableTap, hintNext, nextTarget, setCountBadge,
     makeCherry, renderRods, collapseFrameToRod, breakRodToFrame,
+    addRodGroup, moveRod, flyRodAway,
   };
 })();

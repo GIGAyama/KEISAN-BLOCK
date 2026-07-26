@@ -40,6 +40,7 @@
   <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><path d="m9 4-5.5 2v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14"/><path d="M15 6v14"/></symbol>
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.3 9a2.7 2.7 0 1 1 3.6 2.5c-.8.3-.9 1-.9 1.7"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/><path d="M4 20h16"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></symbol>
 </svg>
 
@@ -98,6 +99,11 @@
         <svg class="icon mode-icon" aria-hidden="true"><use href="#i-rocket"/></svg>
         <span class="mode-name">はってん</span>
         <span class="mode-desc">おおきな かずに ちょうせん</span>
+      </button>
+      <button class="mode-card mc-free wide" data-goto="free">
+        <svg class="icon mode-icon" aria-hidden="true"><use href="#i-pencil"/></svg>
+        <span class="mode-name">じぶんで しきを いれる</span>
+        <span class="mode-desc">きょうかしょや プリントの もんだいを いっしょに かんがえる</span>
       </button>
       <button class="mode-card mc-rec wide" data-goto="records">
         <svg class="icon mode-icon" aria-hidden="true"><use href="#i-chart"/></svg>
@@ -158,6 +164,51 @@
     </div>
   </section>
 
+  <!-- ============ じぶんで しきを いれる ============ -->
+  <section id="screen-free" class="screen">
+    <header class="simple-header">
+      <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+      <h2><svg class="icon h-icon ic-free" aria-hidden="true"><use href="#i-pencil"/></svg> じぶんで しきを いれる</h2>
+    </header>
+    <p class="select-note">わからない もんだいを いれると、ブロックで いっしょに かんがえるよ。</p>
+
+    <div class="free-eq" id="free-eq">
+      <button type="button" class="free-num" id="free-a" data-slot="a" aria-label="まえの かず">?</button>
+      <div class="free-ops">
+        <button type="button" class="free-op" data-op="+">＋</button>
+        <button type="button" class="free-op" data-op="−">−</button>
+      </div>
+      <button type="button" class="free-num" id="free-b" data-slot="b" aria-label="うしろの かず">?</button>
+      <span class="free-eqmark">＝</span>
+      <span class="free-ans" id="free-ans">?</span>
+    </div>
+
+    <div id="free-keypad" class="free-keypad"></div>
+    <p id="free-msg" class="free-msg" aria-live="polite"></p>
+
+    <div id="free-method" class="free-method" hidden>
+      <span class="free-method-title">どの さくせんで かんがえる？</span>
+      <div class="free-method-btns">
+        <button type="button" class="free-method-btn on" data-method="genka">10から ひいて たす</button>
+        <button type="button" class="free-method-btn" data-method="gengen">ばらから ひいて 10から ひく</button>
+      </div>
+    </div>
+
+    <label class="free-switch">
+      <input type="checkbox" id="free-explain">
+      <span class="free-switch-box"><span class="free-switch-knob"></span></span>
+      <span class="free-switch-text">
+        <b>せつめいモード</b>
+        <small>こたえを 見せながら すすむ（みんなで かんがえる とき）</small>
+      </span>
+    </label>
+
+    <button class="menu-btn menu-add free-start" id="btn-free-start" disabled>
+      <span class="menu-main">はじめる</span>
+    </button>
+    <p class="free-note">この モードは きろく（レベル・にがてカード）に のこらないよ。</p>
+  </section>
+
   <!-- ============ れんしゅう画面 ============ -->
   <section id="screen-play" class="screen">
     <header class="play-header">
@@ -194,6 +245,9 @@
         </div>
         <div id="feedback" aria-live="assertive"></div>
         <div id="keypad"></div>
+        <div id="explain-bar" hidden>
+          <button type="button" class="explain-btn" id="btn-explain">こたえを 見る</button>
+        </div>
       </div>
     </div>
   </section>
@@ -267,6 +321,17 @@
       <div class="overlay-btns">
         <button class="menu-btn menu-add" id="btn-continue"><span class="menu-main">つづける</span></button>
         <button class="menu-btn menu-rec" id="btn-set-home"><span class="menu-main">ホームへ</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-free-done" class="overlay">
+    <div class="overlay-card">
+      <div class="big-praise" id="free-done-eq">できたね！</div>
+      <div class="overlay-btns">
+        <button class="menu-btn menu-add" id="btn-free-again"><span class="menu-main">おなじ しきを もういちど</span></button>
+        <button class="menu-btn menu-gengen" id="btn-free-new"><span class="menu-main">べつの しきを いれる</span></button>
+        <button class="menu-btn menu-rec" id="btn-free-home"><span class="menu-main">ホームへ</span></button>
       </div>
     </div>
   </div>
