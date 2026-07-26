@@ -176,6 +176,7 @@
   let looseSlots = [];
   let cherry = null;
   let eqAnsEl = null;
+  let eqEls = { a: null, b: null };   // しきの かず（しるしを つける あいて）
 
   function eqNum(v) {
     const el = document.createElement("span");
@@ -205,27 +206,31 @@
     eqAnsEl = document.createElement("span");
     eqAnsEl.className = "eq-ans";
     eqAnsEl.textContent = "?";
+    eqEls = { a: eqNum(p.a), b: eqNum(p.b) };
 
     const opText = p.type === "timed" ? p.op : (p.type === "add" || p.type === "dev-add" ? "+" : "−");
 
     if (p.type === "timed") {
       cherry = null;
-      eq.appendChild(eqGroup(eqNum(p.a), null));
+      eq.appendChild(eqGroup(eqEls.a, null));
       eq.appendChild(eqOp(opText));
-      eq.appendChild(eqGroup(eqNum(p.b), null));
+      eq.appendChild(eqGroup(eqEls.b, null));
       eq.appendChild(eqOp("="));
       eq.appendChild(eqGroup(eqAnsEl, null));
+      Marks.reset(eq);
       return;
     }
 
     cherry = Blocks.makeCherry();
     // さくらんぼの位置: げんかほう→まえの数 / それ以外→うしろの数
     const cherryOnA = p.type === "genka";
-    eq.appendChild(eqGroup(eqNum(p.a), cherryOnA ? cherry : null));
+    eq.appendChild(eqGroup(eqEls.a, cherryOnA ? cherry : null));
     eq.appendChild(eqOp(opText));
-    eq.appendChild(eqGroup(eqNum(p.b), cherryOnA ? null : cherry));
+    eq.appendChild(eqGroup(eqEls.b, cherryOnA ? null : cherry));
     eq.appendChild(eqOp("="));
     eq.appendChild(eqGroup(eqAnsEl, null));
+    // しるしを のせる いたを しきの うえに おきなおす
+    Marks.reset(eq);
   }
 
   // ---------- ステップ作成 ----------
@@ -255,8 +260,13 @@
     const takeOne = async (slot) => { Sound.move(); await Blocks.flyAway(slot); };
 
     if (p.type === "add") {
+      // きょうかしょの「けいさんの しかた」（9＋4）
+      //  ❶ 9は あと 1で 10。  ❷ 4を 1と 3に わける。
+      //  ❸ 9に 1を たすと 10。 ❹ 10と 3で 13。
       const comp = 10 - p.a;
       const rest = p.b - comp;
+      let splitParts = null;
+      let tenLoop = null;
       frameSlots = Blocks.renderTenFrame(frameArea, p.a, "c-orange", "10の まとまり");
       looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue", "ばら");
       const empties = frameSlots.filter((s) => !s.querySelector(".block"));
@@ -265,6 +275,7 @@
           prompt: `${p.a}は あと いくつで 10かな？`,
           answer: comp,
           hint: "10の まとまりの あいている ところを タップして かぞえてみよう！",
+          recite: () => `${p.a}は あと ${comp}で 10。`,
           before() { Blocks.highlight(empties, true); enableCount(empties); },
           async after() {
             Blocks.highlight(empties, false);
@@ -275,46 +286,72 @@
           prompt: `${p.b}を ${comp}と いくつに わけるかな？`,
           answer: rest,
           hint: `${p.b}から ${comp}を とると のこりは いくつかな？`,
-          // こたえた あとで、じぶんの てで 10の まとまりを かんせいさせる
+          recite: () => `${p.b}を ${comp}と ${rest}に わける。`,
           async after() {
             cherry.setRight(rest);
-            const parts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
-            looseSlots = parts.all;
+            splitParts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
+            looseSlots = splitParts.all;
             await wait(400);
-            await runTask({
-              text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
-              need: comp,
-              slots: parts.left,
-              async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
-              async done() {
-                Blocks.tidyLoose(looseArea);
-                Sound.correct();
-                await Blocks.flashFrame(frameArea);
-              },
-            });
+          },
+        },
+        {
+          // じぶんの てで 10の まとまりを かんせいさせてから こたえる
+          task: {
+            text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
+            need: comp,
+            get slots() { return splitParts.left; },
+            async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
+            async done() {
+              Blocks.tidyLoose(looseArea);
+              Sound.correct();
+              await Blocks.flashFrame(frameArea);
+            },
+          },
+          prompt: `${p.a}に ${comp}を たすと いくつかな？`,
+          answer: 10,
+          hint: "まとまりが いっぱいに なったね。まとまりの ブロックは いくつかな？",
+          recite: () => `${p.a}に ${comp}を たすと 10。`,
+          before() { Marks.focus([eqEls.a, cherry.leftEl]); },
+          async after() {
+            Marks.unfocus();
+            // 「9と 1で 10」を わで かこんで のこす
+            await wait(260);
+            tenLoop = Marks.loop([eqEls.a, cherry.leftEl], { label: "10" });
           },
         },
         {
           prompt: `10と ${rest}で いくつかな？`,
           answer: p.answer,
           hint: "10の まとまりと ばらの かずを たせば いいね！",
-          before() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), true); },
-          async after() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), false); },
+          recite: () => `10と ${rest}で ${p.answer}。`,
+          before() {
+            Blocks.pulseBlocks(frameSlots.concat(looseSlots), true);
+            Marks.focus([tenLoop && tenLoop.label, cherry.rightEl]);
+          },
+          async after() {
+            Blocks.pulseBlocks(frameSlots.concat(looseSlots), false);
+            Marks.unfocus();
+          },
         },
       ];
     }
 
     if (p.type === "genka") {
-      // 13−9 →「10から ひいて たす さくせん」: 10−9=1 → 1+3=4
+      // 13−9 →「10から ひいて たす さくせん」（きょうかしょの けいさんの しかた）
+      //  ❶ 3から 9は ひけない。   ❷ 13を 10と 3に わける。
+      //  ❸ 10から 9を ひくと 1。  ❹ 1と 3で 4。
       const ones = p.a - 10;
       const left = 10 - p.b;
+      let leftEl = null;   // 10の 下に かきこんだ のこりの かず
       frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange", "10の まとまり");
       looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange", "ばら");
       return [
         {
-          prompt: `${p.a}は 10と いくつかな？`,
+          lead: `${ones}から ${p.b}は ひけない。`,
+          prompt: `ばらの ${ones}から ${p.b}は ひけないね。${p.a}を 10と いくつに わけるかな？`,
           answer: ones,
           hint: "10の まとまりの そとの ばらを タップして かぞえてみよう！",
+          recite: () => `${p.a}を 10と ${ones}に わける。`,
           before() { Blocks.pulseBlocks(looseSlots, true); enableCount(looseSlots); },
           async after() {
             Blocks.pulseBlocks(looseSlots, false);
@@ -334,33 +371,53 @@
           prompt: `10から ${p.b}を ひくと いくつかな？`,
           answer: left,
           hint: "まとまりに のこった ブロックを タップして かぞえよう！",
-          before() { enableCount(frameSlots); },
+          recite: () => `10から ${p.b}を ひくと ${left}。`,
+          before() { enableCount(frameSlots); Marks.focus([cherry.leftEl, eqEls.b]); },
+          async after() {
+            Marks.unfocus();
+            // つかった 9に いろを つけ、10に ななめ線、その下に のこりの 1
+            Marks.tint(eqEls.b);
+            Marks.strike(cherry.leftEl);
+            leftEl = Marks.under(cherry.leftEl, left);
+          },
         },
         {
-          prompt: `のこった ${left}と ばらの ${ones}を あわせると いくつかな？`,
+          prompt: `のこった ${left}と ${ones}で いくつかな？`,
           answer: p.answer,
           hint: "のこりの ブロックを タップして ぜんぶ かぞえてみよう！",
+          recite: () => `${left}と ${ones}で ${p.answer}。`,
           before() {
             const all = frameSlots.concat(looseSlots);
             Blocks.pulseBlocks(all, true);
             enableCount(all);
+            // 「1と 3で 4」を むすんで 見せる（けした 10は そとがわに のこす）
+            Marks.tie(leftEl, cherry.rightEl);
+            Marks.focus([leftEl, cherry.rightEl]);
           },
-          async after() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), false); },
+          async after() {
+            Blocks.pulseBlocks(frameSlots.concat(looseSlots), false);
+            Marks.unfocus();
+          },
         },
       ];
     }
 
     if (p.type === "gengen") {
-      // 13−9 →「ばらから ひいて 10から ひく さくせん」: 13−3=10 → 10−6=4
+      // 13−9 →「ばらから ひいて 10から ひく さくせん」
+      //  ❶ 3から 9は ひけない。   ❷ 9を 3と 6に わける。
+      //  ❸ 13から 3を ひくと 10。 ❹ 10から 6を ひくと 4。
       const ones = p.a - 10;
       const rest = p.b - ones;
+      let tenLoop = null;
       frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange", "10の まとまり");
       looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange", "ばら");
       return [
         {
-          prompt: `さきに ばらの ${ones}こを ひくよ。${p.b}を ${ones}と いくつに わけるかな？`,
+          lead: `${ones}から ${p.b}は ひけない。`,
+          prompt: `ばらの ${ones}から ${p.b}は ひけないね。さきに ばらの ${ones}を ひくよ。${p.b}を ${ones}と いくつに わけるかな？`,
           answer: rest,
           hint: `${p.b}から ${ones}を とると のこりは いくつかな？`,
+          recite: () => `${p.b}を ${ones}と ${rest}に わける。`,
           before() { Blocks.pulseBlocks(looseSlots, true); },
           async after() {
             Blocks.pulseBlocks(looseSlots, false);
@@ -379,6 +436,14 @@
           prompt: `${p.a}から ${ones}を ひくと いくつかな？`,
           answer: 10,
           hint: "ばらが なくなって、きれいな 10の まとまりに なったね！",
+          recite: () => `${p.a}から ${ones}を ひくと 10。`,
+          before() { Marks.focus([eqEls.a, cherry.leftEl]); },
+          async after() {
+            Marks.unfocus();
+            await wait(260);
+            // 「13から 3を ひいて 10」を わで かこんで のこす
+            tenLoop = Marks.loop([eqEls.a, cherry.leftEl], { label: "10" });
+          },
         },
         {
           task: {
@@ -391,16 +456,24 @@
           prompt: `10から ${rest}を ひくと いくつかな？`,
           answer: p.answer,
           hint: "まとまりに のこった ブロックを タップして かぞえよう！",
-          before() { enableCount(frameSlots); },
+          recite: () => `10から ${rest}を ひくと ${p.answer}。`,
+          before() {
+            enableCount(frameSlots);
+            Marks.focus([tenLoop && tenLoop.label, cherry.rightEl]);
+          },
+          async after() { Marks.unfocus(); },
         },
       ];
     }
 
     if (p.type === "dev-add") {
-      // 25+8 → 25は あと5で 30 → 8を 5と3に わける → 30と3で 33
+      // 25+8 → ❶ 25は あと5で 30。❷ 8を 5と3に わける。
+      //         ❸ 25に 5を たすと 30。❹ 30と 3で 33。
       const comp = 10 - p.ones;
       const rest = p.b - comp;
       const next10 = (p.tens + 1) * 10;
+      let splitParts = null;
+      let tenLoop = null;
       Blocks.renderRods(rodArea, p.tens, "10の ぼう");
       frameSlots = Blocks.renderTenFrame(frameArea, p.ones, "c-orange", "10の まとまり");
       looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue", "ばら");
@@ -410,6 +483,7 @@
           prompt: `${p.a}は あと いくつで ${next10}かな？`,
           answer: comp,
           hint: "10の まとまりの あいている ところを タップして かぞえてみよう！",
+          recite: () => `${p.a}は あと ${comp}で ${next10}。`,
           before() { Blocks.highlight(empties, true); enableCount(empties); },
           async after() {
             Blocks.highlight(empties, false);
@@ -420,45 +494,67 @@
           prompt: `${p.b}を ${comp}と いくつに わけるかな？`,
           answer: rest,
           hint: `${p.b}から ${comp}を とると のこりは いくつかな？`,
+          recite: () => `${p.b}を ${comp}と ${rest}に わける。`,
           async after() {
             cherry.setRight(rest);
-            const parts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
-            looseSlots = parts.all;
+            splitParts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
+            looseSlots = splitParts.all;
             await wait(400);
-            await runTask({
-              text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
-              need: comp,
-              slots: parts.left,
-              async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
-              async done() {
-                Blocks.tidyLoose(looseArea);
-                Sound.correct();
-                await Blocks.flashFrame(frameArea);
-                // 10こ そろった まとまりが 10のぼうに がったい！
-                await Blocks.collapseFrameToRod(frameSlots, rodArea);
-              },
-            });
+          },
+        },
+        {
+          task: {
+            text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
+            need: comp,
+            get slots() { return splitParts.left; },
+            async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
+            async done() {
+              Blocks.tidyLoose(looseArea);
+              Sound.correct();
+              await Blocks.flashFrame(frameArea);
+              // 10こ そろった まとまりが 10のぼうに がったい！
+              await Blocks.collapseFrameToRod(frameSlots, rodArea);
+            },
+          },
+          prompt: `${p.a}に ${comp}を たすと いくつかな？`,
+          answer: next10,
+          hint: `10のぼうが ${p.tens + 1}ほんに なったね！`,
+          recite: () => `${p.a}に ${comp}を たすと ${next10}。`,
+          before() { Marks.focus([eqEls.a, cherry.leftEl]); },
+          async after() {
+            Marks.unfocus();
+            await wait(260);
+            tenLoop = Marks.loop([eqEls.a, cherry.leftEl], { label: String(next10) });
           },
         },
         {
           prompt: `${next10}と ${rest}で いくつかな？`,
           answer: p.answer,
           hint: `10のぼうが ${p.tens + 1}ほんと ばらが ${rest}こ だね！`,
+          recite: () => `${next10}と ${rest}で ${p.answer}。`,
+          before() { Marks.focus([tenLoop && tenLoop.label, cherry.rightEl]); },
+          async after() { Marks.unfocus(); },
         },
       ];
     }
 
-    // dev-sub: 33−6 →「ばらから ひいて 10から ひく さくせん」: 33−3=30 → 30−3=27
+    // dev-sub: 33−6 →「ばらから ひいて 10から ひく さくせん」
+    //  ❶ 3から 6は ひけない。   ❷ 6を 3と 3に わける。
+    //  ❸ 33から 3を ひくと 30。 ❹ 30から 3を ひくと 27。
     const rest = p.b - p.ones;
+    const tens10 = p.tens * 10;
+    let tenLoop = null;
     Blocks.renderRods(rodArea, p.tens, "10の ぼう");
     frameSlots = Blocks.renderTenFrame(frameArea, 0, "c-orange", "10の まとまり");
     frameArea.hidden = true; // ぼうを ばらす ステップまで かくす
     looseSlots = Blocks.renderLoose(looseArea, p.ones, "c-orange", "ばら");
     return [
       {
-        prompt: `さきに ばらの ${p.ones}こを ひくよ。${p.b}を ${p.ones}と いくつに わけるかな？`,
+        lead: `${p.ones}から ${p.b}は ひけない。`,
+        prompt: `ばらの ${p.ones}から ${p.b}は ひけないね。さきに ばらの ${p.ones}を ひくよ。${p.b}を ${p.ones}と いくつに わけるかな？`,
         answer: rest,
         hint: `${p.b}から ${p.ones}を とると のこりは いくつかな？`,
+        recite: () => `${p.b}を ${p.ones}と ${rest}に わける。`,
         before() { Blocks.pulseBlocks(looseSlots, true); },
         async after() {
           Blocks.pulseBlocks(looseSlots, false);
@@ -474,8 +570,15 @@
           act: takeOne,
         },
         prompt: `${p.a}から ${p.ones}を ひくと いくつかな？`,
-        answer: p.tens * 10,
+        answer: tens10,
         hint: `ばらが なくなって 10のぼうだけに なったね！`,
+        recite: () => `${p.a}から ${p.ones}を ひくと ${tens10}。`,
+        before() { Marks.focus([eqEls.a, cherry.leftEl]); },
+        async after() {
+          Marks.unfocus();
+          await wait(260);
+          tenLoop = Marks.loop([eqEls.a, cherry.leftEl], { label: String(tens10) });
+        },
       },
       {
         task: {
@@ -490,10 +593,15 @@
           },
           act: takeOne,
         },
-        prompt: `${p.tens * 10}から ${rest}を ひくと いくつかな？`,
+        prompt: `${tens10}から ${rest}を ひくと いくつかな？`,
         answer: p.answer,
         hint: "10のぼうの かずと、まとまりに のこった かずを あわせて かんがえよう！",
-        before() { enableCount(frameSlots); },
+        recite: () => `${tens10}から ${rest}を ひくと ${p.answer}。`,
+        before() {
+          enableCount(frameSlots);
+          Marks.focus([tenLoop && tenLoop.label, cherry.rightEl]);
+        },
+        async after() { Marks.unfocus(); },
       },
     ];
   }
@@ -801,10 +909,27 @@
     }
   }
 
+  /** きょうかしょの「けいさんの しかた」を こたえあわせの ときに ふりかえる */
+  function buildHowto(p) {
+    const card = $("#howto-card");
+    const lines = [];
+    state.steps.forEach((s) => {
+      if (s.lead) lines.push(s.lead);
+      if (s.recite) lines.push(s.recite());
+    });
+    if (lines.length === 0) { card.hidden = true; return false; }
+    const op = p.type === "add" || p.type === "dev-add" ? "＋" : "−";
+    $("#howto-title").textContent = `${p.a}${op}${p.b}の けいさんの しかた`;
+    $("#howto-list").innerHTML = lines.map((t) => `<li>${t}</li>`).join("");
+    card.hidden = false;
+    return true;
+  }
+
   function problemDone() {
     const p = state.problem;
     eqAnsEl.textContent = p.answer;
     eqAnsEl.classList.add("answered");
+    Marks.unfocus();
 
     if (isTimed()) return timedProblemDone(p);
 
@@ -829,15 +954,25 @@
     Sound.fanfare();
     $("#correct-text").textContent = state.firstTry ? "せいかい！" : "できたね！";
     const overlay = $("#overlay-correct");
+    const withHowto = buildHowto(p);
     overlay.classList.add("show");
     burstConfetti(32);
+
+    // 「けいさんの しかた」を よむ じかんを とる（タップすれば すぐ つぎへ）
     const sess = state.session;
-    setTimeout(() => {
+    let advanced = false;
+    const go = () => {
+      if (advanced) return;
+      advanced = true;
+      clearTimeout(timer);
+      overlay.onclick = null;
       overlay.classList.remove("show");
       if (sess !== state.session) return;
       if (state.setSolved >= SET_SIZE) showSetComplete();
       else nextProblem();
-    }, 1400);
+    };
+    const timer = setTimeout(go, withHowto ? 3000 : 1400);
+    overlay.onclick = go;
   }
 
   function timedProblemDone(p) {
@@ -1145,7 +1280,9 @@
           state.accepting = false;
           cancelTask();
           clearCounting();
+          Marks.unfocus();
           stopTimer();
+          $("#overlay-correct").classList.remove("show");
           document.body.classList.remove("timed-mode");
           return showScreen("home");
         }

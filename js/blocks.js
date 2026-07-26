@@ -334,8 +334,8 @@ const Blocks = (() => {
     root.className = "cherry";
     root.innerHTML =
       '<svg class="cherry-stems" viewBox="0 0 120 26" aria-hidden="true">' +
-      '<line x1="60" y1="2" x2="32" y2="24"></line>' +
-      '<line x1="60" y1="2" x2="88" y2="24"></line>' +
+      '<line x1="60" y1="2" x2="25" y2="24"></line>' +
+      '<line x1="60" y1="2" x2="95" y2="24"></line>' +
       "</svg>" +
       '<div class="cherry-pair">' +
       '<div class="cherry-circle">?</div>' +
@@ -351,6 +351,8 @@ const Blocks = (() => {
     };
     return {
       root,
+      leftEl: c1,   // しるし（わ・ななめ線・のこりの かず）を つける ため
+      rightEl: c2,
       setLeft(v) { fill(c1, v); },
       setRight(v) { fill(c2, v); },
     };
