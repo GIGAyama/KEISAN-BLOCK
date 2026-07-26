@@ -1,9 +1,13 @@
 /* ============================================================
    さんすうブロック — アプリ本体
-   ・ガイドつき れんしゅう（たしざん／減加法／減減法）
+   ・ガイドつき れんしゅう（たしざん／ひきざん2さくせん）
    ・あんざんタイムアタック
    ・はってん（2けた±1けた）
    ・ミッション／レベル／バッジ／習熟度マップ
+
+   さくせんの なまえは こども むけに:
+     genka  → 「10から ひいて たす さくせん」
+     gengen → 「ばらから ひいて 10から ひく さくせん」
    ============================================================ */
 
 (() => {
@@ -18,12 +22,13 @@
 
   const PRAISES = ["せいかい！", "すごい！", "やったね！", "いいね！", "そのちょうし！"];
 
+  /** さくせんの なまえ（もんだいの うえに 出る おび） */
   const METHOD_LABELS = {
-    add: `${icon("cherry", "ic-add")} 10の まとまりを つくろう`,
-    genka: `${icon("ten", "ic-sub")} げんかほう：10から ひいて たす`,
-    gengen: `${icon("cherry", "ic-add")} げんげんほう：じゅんばんに ひく`,
-    "dev-add": `${icon("rocket", "ic-dev")} つぎの「なん10」を つくろう`,
-    "dev-sub": `${icon("rocket", "ic-dev")} げんげんほうで じゅんばんに ひく`,
+    add: `${icon("cherry", "ic-add")} 10の まとまりを つくる さくせん`,
+    genka: `${icon("ten", "ic-sub")} 10から ひいて たす さくせん`,
+    gengen: `${icon("cherry", "ic-add")} ばらから ひいて 10から ひく さくせん`,
+    "dev-add": `${icon("rocket", "ic-dev")} つぎの なん10を つくる さくせん`,
+    "dev-sub": `${icon("rocket", "ic-dev")} ばらから ひいて 10から ひく さくせん`,
     timed: "",
   };
 
@@ -41,6 +46,7 @@
     streak: 0,
     lastKey: "",
     session: 0,      // れんしゅうセッションの識別子（quit後の遅延コールバック暴発防止）
+    task: null,      // いま すすめている ブロックそうさ
     // タイムアタック
     timedIndex: 0,
     timedMisses: 0,
@@ -64,6 +70,8 @@
   }
 
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function vibrate(pattern) {
     if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) { /* 無視 */ } }
@@ -240,18 +248,24 @@
       }];
     }
 
+    /** 10の まとまりの あいている ところの うち いちばん まえ */
+    const nextEmpty = () => frameSlots.find((s) => !s.querySelector(".block"));
+
+    /** ブロックを 1こ とる（タップ1かい ぶん） */
+    const takeOne = async (slot) => { Sound.move(); await Blocks.flyAway(slot); };
+
     if (p.type === "add") {
       const comp = 10 - p.a;
       const rest = p.b - comp;
-      frameSlots = Blocks.renderTenFrame(frameArea, p.a, "c-orange");
-      looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue");
+      frameSlots = Blocks.renderTenFrame(frameArea, p.a, "c-orange", "10の まとまり");
+      looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue", "ばら");
       const empties = frameSlots.filter((s) => !s.querySelector(".block"));
       return [
         {
           prompt: `${p.a}は あと いくつで 10かな？`,
           answer: comp,
-          hint: "わくの あいている ところを かぞえてみよう！",
-          before() { Blocks.highlight(empties, true); },
+          hint: "10の まとまりの あいている ところを タップして かぞえてみよう！",
+          before() { Blocks.highlight(empties, true); enableCount(empties); },
           async after() {
             Blocks.highlight(empties, false);
             cherry.setLeft(comp);
@@ -261,17 +275,29 @@
           prompt: `${p.b}を ${comp}と いくつに わけるかな？`,
           answer: rest,
           hint: `${p.b}から ${comp}を とると のこりは いくつかな？`,
+          // こたえた あとで、じぶんの てで 10の まとまりを かんせいさせる
           async after() {
             cherry.setRight(rest);
-            Sound.move();
-            const movers = looseSlots.slice(p.b - comp);
-            await Promise.all(movers.map((s, i) => Blocks.flyBlock(s, empties[i], "c-blue", i * 120)));
+            const parts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
+            looseSlots = parts.all;
+            await wait(400);
+            await runTask({
+              text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
+              need: comp,
+              slots: parts.left,
+              async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
+              async done() {
+                Blocks.tidyLoose(looseArea);
+                Sound.correct();
+                await Blocks.flashFrame(frameArea);
+              },
+            });
           },
         },
         {
           prompt: `10と ${rest}で いくつかな？`,
           answer: p.answer,
-          hint: "わくの 10と ばらの ブロックを あわせて かぞえよう！",
+          hint: "10の まとまりと ばらの かずを たせば いいね！",
           before() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), true); },
           async after() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), false); },
         },
@@ -279,16 +305,17 @@
     }
 
     if (p.type === "genka") {
+      // 13−9 →「10から ひいて たす さくせん」: 10−9=1 → 1+3=4
       const ones = p.a - 10;
       const left = 10 - p.b;
-      frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange");
-      looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange");
+      frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange", "10の まとまり");
+      looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange", "ばら");
       return [
         {
           prompt: `${p.a}は 10と いくつかな？`,
           answer: ones,
-          hint: "わくの そとの ばらの ブロックを かぞえてみよう！",
-          before() { Blocks.pulseBlocks(looseSlots, true); },
+          hint: "10の まとまりの そとの ばらを タップして かぞえてみよう！",
+          before() { Blocks.pulseBlocks(looseSlots, true); enableCount(looseSlots); },
           async after() {
             Blocks.pulseBlocks(looseSlots, false);
             cherry.setLeft(10);
@@ -296,30 +323,39 @@
           },
         },
         {
+          // さきに ブロックを とってから、のこりを かぞえて こたえる
+          task: {
+            text: `10の まとまりから ブロックを ${p.b}こ タップして とろう！`,
+            need: p.b,
+            slots: frameSlots,
+            fromEnd: true,
+            act: takeOne,
+          },
           prompt: `10から ${p.b}を ひくと いくつかな？`,
           answer: left,
-          hint: `わくから ブロックを ${p.b}こ とるよ。のこりは いくつかな？`,
-          async after() {
-            Sound.move();
-            const movers = frameSlots.slice(10 - p.b);
-            await Promise.all(movers.map((s, i) => Blocks.flyAway(s, i * 90)));
-          },
+          hint: "まとまりに のこった ブロックを タップして かぞえよう！",
+          before() { enableCount(frameSlots); },
         },
         {
           prompt: `のこった ${left}と ばらの ${ones}を あわせると いくつかな？`,
           answer: p.answer,
-          hint: "のこりの ブロックを ぜんぶ かぞえてみよう！",
-          before() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), true); },
+          hint: "のこりの ブロックを タップして ぜんぶ かぞえてみよう！",
+          before() {
+            const all = frameSlots.concat(looseSlots);
+            Blocks.pulseBlocks(all, true);
+            enableCount(all);
+          },
           async after() { Blocks.pulseBlocks(frameSlots.concat(looseSlots), false); },
         },
       ];
     }
 
     if (p.type === "gengen") {
+      // 13−9 →「ばらから ひいて 10から ひく さくせん」: 13−3=10 → 10−6=4
       const ones = p.a - 10;
       const rest = p.b - ones;
-      frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange");
-      looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange");
+      frameSlots = Blocks.renderTenFrame(frameArea, 10, "c-orange", "10の まとまり");
+      looseSlots = Blocks.renderLoose(looseArea, ones, "c-orange", "ばら");
       return [
         {
           prompt: `さきに ばらの ${ones}こを ひくよ。${p.b}を ${ones}と いくつに わけるかな？`,
@@ -333,23 +369,29 @@
           },
         },
         {
+          task: {
+            text: `ばらの ブロックを ${ones}こ ぜんぶ タップして とろう！`,
+            need: ones,
+            slots: looseSlots,
+            act: takeOne,
+            async done() { Sound.correct(); await Blocks.flashFrame(frameArea); },
+          },
           prompt: `${p.a}から ${ones}を ひくと いくつかな？`,
           answer: 10,
-          hint: "ばらの ブロックを ぜんぶ とると、わくだけに なるね！",
-          async after() {
-            Sound.move();
-            await Promise.all(looseSlots.map((s, i) => Blocks.flyAway(s, i * 90)));
-          },
+          hint: "ばらが なくなって、きれいな 10の まとまりに なったね！",
         },
         {
+          task: {
+            text: `つぎは 10の まとまりから ${rest}こ タップして とろう！`,
+            need: rest,
+            slots: frameSlots,
+            fromEnd: true,
+            act: takeOne,
+          },
           prompt: `10から ${rest}を ひくと いくつかな？`,
           answer: p.answer,
-          hint: `わくから ブロックを ${rest}こ とるよ。のこりは いくつかな？`,
-          async after() {
-            Sound.move();
-            const movers = frameSlots.slice(10 - rest);
-            await Promise.all(movers.map((s, i) => Blocks.flyAway(s, i * 90)));
-          },
+          hint: "まとまりに のこった ブロックを タップして かぞえよう！",
+          before() { enableCount(frameSlots); },
         },
       ];
     }
@@ -359,16 +401,16 @@
       const comp = 10 - p.ones;
       const rest = p.b - comp;
       const next10 = (p.tens + 1) * 10;
-      Blocks.renderRods(rodArea, p.tens);
-      frameSlots = Blocks.renderTenFrame(frameArea, p.ones, "c-orange");
-      looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue");
+      Blocks.renderRods(rodArea, p.tens, "10の ぼう");
+      frameSlots = Blocks.renderTenFrame(frameArea, p.ones, "c-orange", "10の まとまり");
+      looseSlots = Blocks.renderLoose(looseArea, p.b, "c-blue", "ばら");
       const empties = frameSlots.filter((s) => !s.querySelector(".block"));
       return [
         {
           prompt: `${p.a}は あと いくつで ${next10}かな？`,
           answer: comp,
-          hint: "わくの あいている ところを かぞえてみよう！",
-          before() { Blocks.highlight(empties, true); },
+          hint: "10の まとまりの あいている ところを タップして かぞえてみよう！",
+          before() { Blocks.highlight(empties, true); enableCount(empties); },
           async after() {
             Blocks.highlight(empties, false);
             cherry.setLeft(comp);
@@ -380,12 +422,22 @@
           hint: `${p.b}から ${comp}を とると のこりは いくつかな？`,
           async after() {
             cherry.setRight(rest);
-            Sound.move();
-            const movers = looseSlots.slice(p.b - comp);
-            await Promise.all(movers.map((s, i) => Blocks.flyBlock(s, empties[i], "c-blue", i * 100)));
-            // 10こ そろった わくが 10のぼうに がったい！
-            await Blocks.collapseFrameToRod(frameSlots, rodArea);
-            Sound.correct();
+            const parts = Blocks.splitLoose(looseArea, comp, rest, "c-blue");
+            looseSlots = parts.all;
+            await wait(400);
+            await runTask({
+              text: `わけた ${comp}こを タップして 10の まとまりに いれよう！`,
+              need: comp,
+              slots: parts.left,
+              async act(slot) { Sound.move(); await Blocks.flyBlock(slot, nextEmpty(), "c-blue"); },
+              async done() {
+                Blocks.tidyLoose(looseArea);
+                Sound.correct();
+                await Blocks.flashFrame(frameArea);
+                // 10こ そろった まとまりが 10のぼうに がったい！
+                await Blocks.collapseFrameToRod(frameSlots, rodArea);
+              },
+            });
           },
         },
         {
@@ -396,12 +448,12 @@
       ];
     }
 
-    // dev-sub: 33−6 → 6を 3と3に わける → 33−3=30 → 30−3=27
+    // dev-sub: 33−6 →「ばらから ひいて 10から ひく さくせん」: 33−3=30 → 30−3=27
     const rest = p.b - p.ones;
-    Blocks.renderRods(rodArea, p.tens);
-    frameSlots = Blocks.renderTenFrame(frameArea, 0, "c-orange");
+    Blocks.renderRods(rodArea, p.tens, "10の ぼう");
+    frameSlots = Blocks.renderTenFrame(frameArea, 0, "c-orange", "10の まとまり");
     frameArea.hidden = true; // ぼうを ばらす ステップまで かくす
-    looseSlots = Blocks.renderLoose(looseArea, p.ones, "c-orange");
+    looseSlots = Blocks.renderLoose(looseArea, p.ones, "c-orange", "ばら");
     return [
       {
         prompt: `さきに ばらの ${p.ones}こを ひくよ。${p.b}を ${p.ones}と いくつに わけるかな？`,
@@ -415,28 +467,168 @@
         },
       },
       {
+        task: {
+          text: `ばらの ブロックを ${p.ones}こ ぜんぶ タップして とろう！`,
+          need: p.ones,
+          slots: looseSlots,
+          act: takeOne,
+        },
         prompt: `${p.a}から ${p.ones}を ひくと いくつかな？`,
         answer: p.tens * 10,
-        hint: `ばらを ぜんぶ とると 10のぼうだけに なるね！`,
-        async after() {
-          Sound.move();
-          await Promise.all(looseSlots.map((s, i) => Blocks.flyAway(s, i * 90)));
-        },
+        hint: `ばらが なくなって 10のぼうだけに なったね！`,
       },
       {
+        task: {
+          setupText: "10のぼうを 1ぽん ばらして まとまりに もどすよ！",
+          text: `まとまりから ブロックを ${rest}こ タップして とろう！`,
+          need: rest,
+          slots: frameSlots,
+          fromEnd: true,
+          async setup() {
+            frameArea.hidden = false;
+            await Blocks.breakRodToFrame(rodArea, frameSlots, "c-orange");
+          },
+          act: takeOne,
+        },
         prompt: `${p.tens * 10}から ${rest}を ひくと いくつかな？`,
         answer: p.answer,
-        hint: `10のぼうを 1ほん ばらして、そこから ${rest}こ とろう！`,
-        async after() {
-          // 10のぼうが ばらけて、そこから rest こ ひく
-          $("#frame-area").hidden = false;
-          await Blocks.breakRodToFrame($("#rod-area"), frameSlots, "c-orange");
-          Sound.move();
-          const movers = frameSlots.slice(10 - rest);
-          await Promise.all(movers.map((s, i) => Blocks.flyAway(s, i * 90)));
-        },
+        hint: "10のぼうの かずと、まとまりに のこった かずを あわせて かんがえよう！",
+        before() { enableCount(frameSlots); },
       },
     ];
+  }
+
+  // ---------- ブロックそうさ（じぶんの てで うごかす） ----------
+  let countSlots = [];
+
+  /**
+   * ブロックを タップして うごかす／とる フェーズ。
+   * ぜんぶ そうさし おわるまで こたえは にゅうりょくできない。
+   * じぶんの てで うごかすことで、しきの いみが てざわりとして のこる。
+   */
+  function runTask(task) {
+    const sess = state.session;
+    return new Promise((resolve) => {
+      const bar = $("#task-bar");
+      const remainEl = $("#task-remain");
+      const autoBtn = $("#btn-task-auto");
+      let done = 0;
+      let busy = false;
+      let hintTimer = 0;
+      let finished = false;
+      let slots = [];
+
+      const paint = () => { remainEl.innerHTML = `あと <b>${task.need - done}</b>こ`; };
+
+      const armHint = () => {
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => Blocks.hintNext(slots, true, task.fromEnd), 4000);
+      };
+
+      const cleanup = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(hintTimer);
+        Blocks.disableTap(slots);
+        autoBtn.onclick = null;
+        bar.hidden = true;
+        document.body.classList.remove("task-mode");
+        state.task = null;
+      };
+
+      // やめた ときに 呼ばれて、まちを といてくれる
+      state.task = { cancel: () => { cleanup(); resolve(); } };
+
+      const tap = async (slot) => {
+        if (finished || busy || done >= task.need) return;
+        if (!slot.querySelector(".block")) return;
+        busy = true;
+        clearTimeout(hintTimer);
+        Blocks.hintNext(slots, false);
+        await task.act(slot, done);
+        if (sess !== state.session) return;
+        // そうさ ずみの ところは もう ひからせない
+        Blocks.disableTap([slot]);
+        done++;
+        paint();
+        busy = false;
+        if (done >= task.need) {
+          cleanup();
+          if (task.done) await task.done();
+          if (sess !== state.session) return;
+          resolve();
+        } else {
+          armHint();
+        }
+      };
+
+      (async () => {
+        state.accepting = false;
+        document.body.classList.add("task-mode");
+        setFeedback("", "");
+        bar.hidden = false;
+        remainEl.innerHTML = "";
+        $("#prompt").textContent = task.setupText || task.text;
+        if (task.setup) await task.setup();
+        if (sess !== state.session) return;
+        $("#prompt").textContent = task.text;
+        slots = task.slots.filter((s) => s.querySelector(".block"));
+        paint();
+        Blocks.enableTap(slots, tap);
+        armHint();
+        // まとめて うごかしたい ときの たすけぶね
+        autoBtn.onclick = async () => {
+          while (!finished && done < task.need) {
+            const s = Blocks.nextTarget(slots, task.fromEnd);
+            if (!s) break;
+            await tap(s);
+            if (sess !== state.session) return;
+          }
+        };
+      })();
+    });
+  }
+
+  function cancelTask() {
+    if (state.task) state.task.cancel();
+    $("#task-bar").hidden = true;
+    document.body.classList.remove("task-mode");
+  }
+
+  /** ブロック（や あきマス）を タップして 1・2・3… と かぞえられるようにする */
+  function enableCount(slots) {
+    let n = 0;
+    const order = [];
+    slots.forEach((s) => {
+      s.classList.add("countable");
+      s._count = () => {
+        if (!state.accepting) return;
+        Sound.tap();
+        if (s.dataset.cn) {
+          // かぞえまちがえたら タップで さいしょから
+          order.forEach((x) => { Blocks.setCountBadge(x, null); delete x.dataset.cn; });
+          order.length = 0;
+          n = 0;
+          return;
+        }
+        n++;
+        s.dataset.cn = n;
+        order.push(s);
+        Blocks.setCountBadge(s, n);
+      };
+      s.addEventListener("click", s._count);
+      countSlots.push(s);
+    });
+  }
+
+  function clearCounting() {
+    countSlots.forEach((s) => {
+      s.classList.remove("countable");
+      if (s._count) { s.removeEventListener("click", s._count); s._count = null; }
+      delete s.dataset.cn;
+      Blocks.setCountBadge(s, null);
+    });
+    countSlots = [];
   }
 
   // ---------- れんしゅうの 進行 ----------
@@ -478,6 +670,8 @@
   }
 
   function nextProblem() {
+    cancelTask();
+    clearCounting();
     state.problem = generateProblem(state.mode);
     state.stepIndex = 0;
     state.wrongCount = 0;
@@ -494,12 +688,20 @@
 
   function currentStep() { return state.steps[state.stepIndex]; }
 
-  function showStep() {
+  async function showStep() {
     const step = currentStep();
+    const sess = state.session;
+    clearCounting();
     state.buffer = "";
     renderBuffer();
-    $("#prompt").textContent = step.prompt;
     setFeedback("", "");
+    state.accepting = false;
+    // さきに ブロックを うごかしてから、めのまえの けっかを 数字で こたえる
+    if (step.task) {
+      await runTask(step.task);
+      if (sess !== state.session) return;
+    }
+    $("#prompt").textContent = step.prompt;
     step.before?.();
     state.accepting = true;
   }
@@ -761,8 +963,8 @@
   // ---------- きろく画面 ----------
   const MODE_DEFS = [
     { key: "add", name: "たしざん", small: "くりあがり" },
-    { key: "genka", name: "ひきざん（げんかほう）", small: "10から ひいて たす" },
-    { key: "gengen", name: "ひきざん（げんげんほう）", small: "じゅんばんに ひく" },
+    { key: "genka", name: "ひきざん", small: "10から ひいて たす さくせん" },
+    { key: "gengen", name: "ひきざん", small: "ばらから ひいて 10から ひく さくせん" },
     { key: "dev-add", name: "はってん たしざん", small: "2けた＋1けた" },
     { key: "dev-sub", name: "はってん ひきざん", small: "2けた−1けた" },
   ];
@@ -941,6 +1143,8 @@
         if (dest === "quit") {
           state.session++;        // 遅延コールバックを 無効化
           state.accepting = false;
+          cancelTask();
+          clearCounting();
           stopTimer();
           document.body.classList.remove("timed-mode");
           return showScreen("home");

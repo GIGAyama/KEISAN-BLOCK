@@ -109,26 +109,26 @@
     <button id="btn-install" class="install-btn" hidden><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> アプリを インストール</button>
   </section>
 
-  <!-- ============ ひきざん ほうほうえらび ============ -->
+  <!-- ============ ひきざん さくせんえらび ============ -->
   <section id="screen-sub-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2>ひきざんの やりかたを えらぼう</h2>
+      <h2>ひきざんの さくせんを えらぼう</h2>
     </header>
     <div class="menu">
       <button class="menu-btn menu-genka" data-mode="genka">
-        <span class="menu-main">げんかほう</span>
-        <span class="menu-small">10から ひいて、のこりと たす</span>
+        <span class="menu-main">10から ひいて たす さくせん</span>
+        <span class="menu-small">10の まとまりから さきに ひいて、ばらと たす</span>
         <span class="menu-example">13−9 → 10−9=1 → 1+3=4</span>
       </button>
       <button class="menu-btn menu-gengen" data-mode="gengen">
-        <span class="menu-main">げんげんほう</span>
-        <span class="menu-small">ばらから じゅんばんに ひく</span>
+        <span class="menu-main">ばらから ひいて 10から ひく さくせん</span>
+        <span class="menu-small">ばらを さきに ぜんぶ ひいてから、10の まとまりから ひく</span>
         <span class="menu-example">13−9 → 13−3=10 → 10−6=4</span>
       </button>
       <button class="menu-btn menu-mix" data-mode="mix">
         <span class="menu-main">ミックス</span>
-        <span class="menu-small">どちらの やりかたも れんしゅう</span>
+        <span class="menu-small">どちらの さくせんも れんしゅう</span>
       </button>
     </div>
   </section>
@@ -148,7 +148,7 @@
       </button>
       <button class="menu-btn menu-gengen" data-mode="dev-sub">
         <span class="menu-main">ひきざん</span>
-        <span class="menu-small">2けた − 1けた（くりさがり）</span>
+        <span class="menu-small">2けた − 1けた（ばらから ひいて 10から ひく さくせん）</span>
         <span class="menu-example">33−6, 52−7 …</span>
       </button>
       <button class="menu-btn menu-mix" data-mode="dev-mix">
@@ -187,6 +187,10 @@
         <div id="prompt-box">
           <p id="prompt"></p>
           <div id="answer-display" class="waiting">?</div>
+        </div>
+        <div id="task-bar" hidden>
+          <span id="task-remain"></span>
+          <button id="btn-task-auto" class="task-auto" type="button">じどうで うごかす</button>
         </div>
         <div id="feedback" aria-live="assertive"></div>
         <div id="keypad"></div>
