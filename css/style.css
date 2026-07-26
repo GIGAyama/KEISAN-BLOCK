@@ -289,6 +289,7 @@ body::before {
 .mc-timed { background: linear-gradient(180deg, #ffd35c, #e8a10e); }
 .mc-dev { background: linear-gradient(180deg, #52d98a, var(--green-dark)); }
 .mc-rec { background: linear-gradient(180deg, #b98ae0, #8a53c4); }
+.mc-free { background: linear-gradient(180deg, #ff9ec4, #e05a92); }
 
 .install-btn {
   margin: 16px auto 0;
@@ -390,6 +391,220 @@ body::before {
 
 .ic-dev { color: var(--green-dark); }
 .ic-timed { color: #e8a10e; }
+.ic-free { color: #e05a92; }
+
+/* ---------- じぶんで しきを いれる がめん ---------- */
+.free-eq {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 2vw, 12px);
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: clamp(10px, 2.5vw, 16px);
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.free-num {
+  min-width: clamp(64px, 18vw, 96px);
+  min-height: clamp(56px, 15vw, 84px);
+  border: 3px dashed var(--slot-line);
+  border-radius: 16px;
+  background: #f7f9fc;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: clamp(30px, 8vw, 46px);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.free-num.selected {
+  border-style: solid;
+  border-color: var(--pink);
+  background: #fff0f6;
+  animation: free-sel 1.4s ease-in-out infinite;
+}
+
+@keyframes free-sel {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 126, 179, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(255, 126, 179, 0.3); }
+}
+
+.free-ops { display: flex; flex-direction: column; gap: 6px; }
+
+.free-op {
+  border: none;
+  border-radius: 12px;
+  min-width: 46px;
+  min-height: 34px;
+  background: #eef2f7;
+  color: #7b8896;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.free-op.on { background: var(--blue); color: #fff; }
+
+.free-eqmark, .free-ans {
+  font-size: clamp(28px, 7vw, 40px);
+  font-weight: bold;
+  color: var(--ink);
+}
+
+.free-ans { color: var(--purple); }
+
+.free-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px, 1.6vmin, 12px);
+  max-width: min(400px, 100%);
+  margin: 0 auto;
+  touch-action: manipulation;
+}
+
+.free-keypad button {
+  border: none;
+  border-radius: 14px;
+  min-height: clamp(44px, 8vmin, 60px);
+  font-family: inherit;
+  font-size: clamp(20px, 4.4vmin, 28px);
+  font-weight: bold;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.free-keypad button:active { transform: translateY(3px); box-shadow: none; }
+.free-keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: clamp(15px, 3.2vmin, 20px); }
+.free-keypad .key-clear { background: #eef2f7; color: #67707e; font-size: clamp(13px, 2.8vmin, 17px); }
+
+.free-msg {
+  min-height: 22px;
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.free-msg.warn { color: #d4576b; }
+
+.free-method {
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.free-method-title { font-size: 13px; font-weight: bold; color: #67707e; }
+
+.free-method-btns { display: flex; gap: 8px; margin-top: 8px; }
+
+.free-method-btn {
+  flex: 1;
+  border: 3px solid #e3e9ef;
+  border-radius: 12px;
+  background: #f7f9fc;
+  color: #67707e;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1.4;
+  padding: 8px 6px;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.free-method-btn.on { border-color: var(--blue); background: #eaf4ff; color: var(--blue-dark); }
+
+.free-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+  margin: 12px 0;
+  cursor: pointer;
+}
+
+.free-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.free-switch-box {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: #d9dee6;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.free-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+}
+
+.free-switch input:checked + .free-switch-box { background: var(--green); }
+.free-switch input:checked + .free-switch-box .free-switch-knob { transform: translateX(22px); }
+.free-switch input:focus-visible + .free-switch-box { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.free-switch-text { font-size: 14px; line-height: 1.4; }
+.free-switch-text small { display: block; font-size: 12px; opacity: 0.75; }
+
+.free-start { width: 100%; }
+.free-start:disabled { background: #d9dee6; color: #8b95a1; cursor: default; }
+
+.free-note {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ---------- せつめいモード ---------- */
+body.explain-mode #keypad { display: none; }
+body.free-mode #streak-badge { display: none; }
+
+#explain-bar {
+  display: flex;
+  justify-content: center;
+  margin: 10px auto 4px;
+  max-width: min(440px, 100%);
+  width: 100%;
+}
+
+.explain-btn {
+  width: 100%;
+  min-height: clamp(52px, 9vmin, 68px);
+  border: none;
+  border-radius: 16px;
+  background: var(--green);
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(20px, 4.4vmin, 26px);
+  font-weight: bold;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.explain-btn:active { transform: translateY(3px); box-shadow: none; }
+.explain-btn .icon { width: 26px; height: 26px; vertical-align: -4px; }
+body.task-mode #explain-bar { opacity: 0.35; pointer-events: none; }
 
 .play-header {
   display: flex;
@@ -749,6 +964,15 @@ body.timed-mode #equation {
 
 body.timed-mode #block-stage { display: none; }
 
+/* 10の ぼうは 2かたまり ならぶ ことが ある（じぶんの ぶんと たす ぶん） */
+#rod-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(8px, 2.5vw, 16px);
+}
+
 #rod-area:empty { display: none; }
 
 /* ---------- かたまり（10のぼう／10のわく／ばら）と かずの ラベル ---------- */
@@ -783,7 +1007,10 @@ body.timed-mode #block-stage { display: none; }
 
 .rod-group {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
+  max-width: min(280px, 74vw);
 }
 
 .ten-rod {
@@ -796,6 +1023,29 @@ body.timed-mode #block-stage { display: none; }
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+/* タップして うごかせる 10のぼう（じぶんで しきを いれる モード） */
+.rod-slot { position: relative; display: flex; }
+.rod-slot:empty { display: none; }
+.rod-slot.tappable { cursor: pointer; }
+
+.rod-slot.tappable .ten-rod {
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18), 0 0 0 3px rgba(255, 126, 179, 0.85),
+    0 3px 5px rgba(0, 0, 0, 0.16);
+  animation: tap-ready 1.7s ease-in-out infinite;
+}
+
+.rod-slot.hint .ten-rod { animation: tap-hint 0.7s ease-in-out infinite; }
+
+.ten-rod.pop { animation: pop 0.4s; }
+.ten-rod.fly-away { animation: fly-away 0.55s ease-in forwards; }
+
+.ten-rod.flying {
+  position: fixed;
+  margin: 0;
+  z-index: 50;
+  transition: transform 0.55s cubic-bezier(0.5, -0.2, 0.4, 1.2);
 }
 
 .ten-rod::before {
