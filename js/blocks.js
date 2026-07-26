@@ -1,12 +1,60 @@
 /* ============================================================
    算数ブロックと さくらんぼの 描画・アニメーション
+   ・10のまとまり（10のわく）／ばら／10のぼう を ラベルと かずつきで 見せる
+   ・こどもが タップして じぶんで うごかす／とる ための しくみ
    ============================================================ */
 
 const Blocks = (() => {
   const FLY_MS = 560;
 
-  /** 10のわく（2だん×5こ）を描画し、count こブロックを入れる */
-  function renderTenFrame(container, count, colorClass) {
+  // ---------- かたまり（グループ）と かずの ひょうじ ----------
+
+  /** ブロックの かたまりを 「なまえ＋いくつ」の ラベルつきの はこに いれる */
+  function makeGroup(container, contentEl, caption, countSel) {
+    const wrap = document.createElement("div");
+    wrap.className = "block-group";
+    wrap.dataset.countSel = countSel;
+    wrap.appendChild(contentEl);
+    if (caption) {
+      const cap = document.createElement("div");
+      cap.className = "group-caption";
+      cap.innerHTML = `${caption} <b class="cap-count">0</b>こ`;
+      wrap.appendChild(cap);
+    }
+    container.appendChild(wrap);
+    refreshCounts();
+    return wrap;
+  }
+
+  /**
+   * それぞれの かたまりに いま いくつ あるかを 数字で 出しなおす。
+   * 10こ そろったら みどりに ひからせて「10のまとまり」を つよく 見せる。
+   */
+  function refreshCounts() {
+    document.querySelectorAll("#block-stage .block-group").forEach((g) => {
+      const n = g.dataset.countSel ? g.querySelectorAll(g.dataset.countSel).length : 0;
+      const frame = g.querySelector(".ten-frame");
+      if (frame) frame.classList.toggle("full", n >= 10);
+      const el = g.querySelector(".cap-count");
+      if (!el || el.textContent === String(n)) return;
+      el.textContent = n;
+      el.classList.remove("bump");
+      void el.offsetWidth; // アニメを 再スタートさせる
+      el.classList.add("bump");
+    });
+  }
+
+  /** ブロックが ふえたり へったり したら かずの ひょうじを 自動で 合わせる */
+  function watchStage() {
+    const stage = document.getElementById("block-stage");
+    if (!stage) return;
+    new MutationObserver(refreshCounts).observe(stage, { childList: true, subtree: true });
+  }
+
+  // ---------- 10のまとまり（10のわく） ----------
+
+  /** 10のまとまりの わく（2だん×5こ）を描画し、count こブロックを入れる */
+  function renderTenFrame(container, count, colorClass, caption) {
     container.innerHTML = "";
     const frame = document.createElement("div");
     frame.className = "ten-frame";
@@ -18,13 +66,27 @@ const Blocks = (() => {
       frame.appendChild(slot);
       slots.push(slot);
     }
-    container.appendChild(frame);
+    makeGroup(container, frame, caption, ".block");
     return slots;
   }
 
-  /** ばらのブロック（5こずつの だん） */
-  function renderLoose(container, count, colorClass) {
-    container.innerHTML = "";
+  /** 10こ そろった しゅんかんを 「10の まとまり！」と 見せて つよく のこす */
+  function flashFrame(container) {
+    return new Promise((resolve) => {
+      const frame = container.querySelector(".ten-frame");
+      if (!frame) { resolve(); return; }
+      const tag = document.createElement("div");
+      tag.className = "frame-tag";
+      tag.textContent = "10の まとまり できた！";
+      frame.appendChild(tag);
+      setTimeout(() => { tag.remove(); resolve(); }, 1000);
+    });
+  }
+
+  // ---------- ばらのブロック ----------
+
+  /** ばらの かたまりを 1つ つくる（5こずつの だん） */
+  function makeLooseGroup(row, count, colorClass) {
     const group = document.createElement("div");
     group.className = "loose-group";
     const cols = Math.min(5, Math.max(count, 1));
@@ -37,8 +99,48 @@ const Blocks = (() => {
       group.appendChild(slot);
       slots.push(slot);
     }
-    container.appendChild(group);
+    row.appendChild(group);
     return slots;
+  }
+
+  function renderLoose(container, count, colorClass, caption) {
+    container.innerHTML = "";
+    const row = document.createElement("div");
+    row.className = "loose-row";
+    const slots = makeLooseGroup(row, count, colorClass);
+    makeGroup(container, row, caption, ".block");
+    return slots;
+  }
+
+  /**
+   * ばらを さくらんぼの とおりに 2つの かたまりに 分けなおす。
+   * 「7を 2と 5に わける」が ブロックでも 目に見えるようになる。
+   */
+  function splitLoose(container, leftCount, rightCount, colorClass) {
+    const row = container.querySelector(".loose-row");
+    row.innerHTML = "";
+    row.classList.add("split");
+    const left = makeLooseGroup(row, leftCount, colorClass);
+    const divider = document.createElement("span");
+    divider.className = "loose-divider";
+    row.appendChild(divider);
+    const right = makeLooseGroup(row, rightCount, colorClass);
+    left.forEach((s) => s.classList.add("part-a"));
+    right.forEach((s) => s.classList.add("part-b"));
+    row.querySelectorAll(".block").forEach((b) => b.classList.add("pop"));
+    return { left, right, all: left.concat(right) };
+  }
+
+  /** からっぽに なった かたまりと しきりを かたづけて 見やすくする */
+  function tidyLoose(container) {
+    const row = container.querySelector(".loose-row");
+    if (!row) return;
+    row.querySelectorAll(".loose-group").forEach((g) => {
+      if (!g.querySelector(".block")) g.remove();
+    });
+    if (row.querySelectorAll(".loose-group").length < 2) {
+      row.querySelectorAll(".loose-divider").forEach((d) => d.remove());
+    }
   }
 
   function makeBlock(colorClass) {
@@ -47,11 +149,13 @@ const Blocks = (() => {
     return b;
   }
 
+  // ---------- うごき ----------
+
   /** fromSlot のブロックを toSlot へ とばす */
   function flyBlock(fromSlot, toSlot, colorClass, delay = 0) {
     return new Promise((resolve) => {
       const fromBlock = fromSlot.querySelector(".block");
-      if (!fromBlock) { resolve(); return; }
+      if (!fromBlock || !toSlot) { resolve(); return; }
       const fr = fromBlock.getBoundingClientRect();
       const clone = fromBlock.cloneNode(true);
       clone.classList.add("flying");
@@ -100,8 +204,62 @@ const Blocks = (() => {
     });
   }
 
-  /** 10のぼう（はってんモード用）を count ほん ならべる */
-  function renderRods(container, count) {
+  // ---------- タップして そうさする ----------
+
+  /** スロットを タップできる じょうたいに する */
+  function enableTap(slots, handler) {
+    slots.forEach((s) => {
+      s.classList.add("tappable");
+      s._tap = () => handler(s);
+      s.addEventListener("click", s._tap);
+    });
+  }
+
+  function disableTap(slots) {
+    slots.forEach((s) => {
+      s.classList.remove("tappable", "hint");
+      if (s._tap) { s.removeEventListener("click", s._tap); s._tap = null; }
+    });
+  }
+
+  /** つぎに そうさする 1こを えらぶ（まとまりから とるときは うしろから） */
+  function nextTarget(slots, fromEnd) {
+    const filled = slots.filter((s) => s.querySelector(".block"));
+    return fromEnd ? filled[filled.length - 1] : filled[0];
+  }
+
+  /** まだ そうさして いない スロットを ゆらして 気づかせる */
+  function hintNext(slots, on, fromEnd) {
+    slots.forEach((s) => s.classList.remove("hint"));
+    if (!on) return;
+    const next = nextTarget(slots, fromEnd);
+    if (next) next.classList.add("hint");
+  }
+
+  /** 「1・2・3…」と かぞえた 数字を ブロック（または あきマス）に つける */
+  function setCountBadge(slot, n) {
+    if (n == null) {
+      slot.querySelectorAll(".count-badge").forEach((x) => x.remove());
+      return;
+    }
+    const host = slot.querySelector(".block") || slot;
+    let b = slot.querySelector(".count-badge");
+    if (!b || b.parentElement !== host) {
+      slot.querySelectorAll(".count-badge").forEach((x) => x.remove());
+      b = document.createElement("span");
+      b.className = "count-badge";
+      host.appendChild(b);
+    }
+    b.textContent = n;
+    b.classList.remove("pop");
+    void b.offsetWidth;
+    b.classList.add("pop");
+  }
+
+  // ---------- 10のぼう（はってんモード） ----------
+
+  /** 10のぼうを count ほん ならべる */
+  function renderRods(container, count, caption) {
     container.innerHTML = "";
     if (count <= 0) return [];
     const group = document.createElement("div");
@@ -112,7 +270,7 @@ const Blocks = (() => {
       group.appendChild(rod);
       rods.push(rod);
     }
-    container.appendChild(group);
+    makeGroup(container, group, caption, ".ten-rod");
     return rods;
   }
 
@@ -123,7 +281,7 @@ const Blocks = (() => {
     return rod;
   }
 
-  /** わくの 10こが 1本の ぼうに がったいする */
+  /** まとまりの 10こが 1本の ぼうに がったいする */
   function collapseFrameToRod(frameSlots, rodContainer) {
     return new Promise((resolve) => {
       frameSlots.forEach((s, i) => {
@@ -146,7 +304,7 @@ const Blocks = (() => {
     });
   }
 
-  /** 1本の ぼうが わくの 10この ブロックに ばらける */
+  /** 1本の ぼうが 10この ブロックに ばらけて まとまりに もどる */
   function breakRodToFrame(rodContainer, frameSlots, colorClass) {
     return new Promise((resolve) => {
       const rods = rodContainer.querySelectorAll(".ten-rod");
@@ -167,6 +325,8 @@ const Blocks = (() => {
       }, 320);
     });
   }
+
+  // ---------- さくらんぼ ----------
 
   /** さくらんぼ（2つの まる） */
   function makeCherry() {
@@ -196,8 +356,12 @@ const Blocks = (() => {
     };
   }
 
+  watchStage();
+
   return {
-    renderTenFrame, renderLoose, flyBlock, flyAway, highlight, pulseBlocks,
+    renderTenFrame, renderLoose, splitLoose, tidyLoose, flashFrame,
+    flyBlock, flyAway, highlight, pulseBlocks, refreshCounts,
+    enableTap, disableTap, hintNext, nextTarget, setCountBadge,
     makeCherry, renderRods, collapseFrameToRod, breakRodToFrame,
   };
 })();
