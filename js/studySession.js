@@ -62,6 +62,19 @@ const StudySession = (() => {
   let hiddenAt = 0;      // タブが 見えなくなった 時刻
   let abortTimer = 0;
 
+  /**
+   * Chromebook では メモリ不足や スリープで タブが すてられる ことがある。
+   * 5ふんの タイマーごと きえてしまうので、pagehide で かならず レコードを 確定する（§5.4）。
+   * beforeunload は モバイルや bfcache 経路で 発火しない ことが あるため つかわない。
+   *
+   * おわりの 時刻は「はなれた 時刻」。すでに タブが 見えなくなっていれば その ときの 時刻を、
+   * 見えたまま とじた／リロードした ときは いまの 時刻を つかう。
+   */
+  window.addEventListener("pagehide", () => {
+    if (!rec) return;
+    finish("aborted", { endMs: document.hidden && hiddenAt ? hiddenAt : Date.now() });
+  });
+
   /** 5ふん もどってこなければ そこまでを 中断として のこす（§5.4） */
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
