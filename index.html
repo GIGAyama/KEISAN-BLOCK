@@ -260,6 +260,7 @@
     </header>
     <nav class="tab-bar">
       <button class="tab-btn active" data-tab="stats">せいせき</button>
+      <button class="tab-btn" data-tab="log">あしあと</button>
       <button class="tab-btn" data-tab="map">マップ</button>
       <button class="tab-btn" data-tab="calendar">カレンダー</button>
       <button class="tab-btn" data-tab="badges">バッジ</button>
@@ -268,6 +269,16 @@
     <div id="tab-stats" class="tab-panel active">
       <div id="records-list"></div>
       <button id="btn-reset-records" class="danger-btn">きろくを ぜんぶ けす</button>
+    </div>
+
+    <div id="tab-log" class="tab-panel">
+      <p class="log-note">いっぱつせいかい＝1かいめで せいかいした もんだい。<br>
+        この あしあとは この タブレットの なかだけに のこります。</p>
+      <div class="log-range" id="log-range" hidden>この 1しゅうかん</div>
+      <div id="log-summary" class="log-summary"></div>
+      <div id="log-modes" class="log-modes"></div>
+      <h3 class="log-title" id="log-list-title" hidden>さいきんの とりくみ</h3>
+      <div id="log-list" class="log-list"></div>
     </div>
 
     <div id="tab-map" class="tab-panel">
@@ -361,6 +372,9 @@
 <script src="js/blocks.js"></script>
 <script src="js/marks.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/studyLog.js"></script>
+<script src="js/studySession.js"></script>
+<script src="js/studyStats.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

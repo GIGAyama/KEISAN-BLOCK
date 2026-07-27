@@ -132,6 +132,17 @@
     return type === "add" ? `A${a}+${b}` : `S${a}-${b}`;
   }
 
+  /**
+   * 学習ログの 設問ID（items[].q）。
+   * じっさいに 出した しきから きまる 不変の ID で、もんだい文は いれない。
+   * きほんもんだいは けいさんカードの キーと 一致し（A8+7 / S13-9）、
+   * はってんもんだいは 2けたの しき その ものが ID に なる（A25+8 / S33-6）。
+   */
+  function problemId(p) {
+    const plus = p.op ? p.op === "+" : (p.type === "add" || p.type === "dev-add" || p.type === "free-add");
+    return `${plus ? "A" : "S"}${p.a}${plus ? "+" : "-"}${p.b}`;
+  }
+
   /** にがてカードを 35%の かくりつで まぜる 適応出題 */
   function pickFact(type) {
     const pool = type === "add" ? ADD_FACTS : SUB_FACTS;
@@ -972,8 +983,9 @@
         paint();
         Blocks.enableTap(slots, tap);
         armHint();
-        // まとめて うごかしたい ときの たすけぶね
+        // まとめて うごかしたい ときの たすけぶね（補助ツールを つかった ことを のこす）
         autoBtn.onclick = async () => {
+          StudySession.usedHint();
           while (!finished && done < task.need) {
             const s = Blocks.nextTarget(slots, task.fromEnd, itemSel);
             if (!s) break;
@@ -1034,6 +1046,9 @@
     state.setSolved = 0;
     state.streak = 0;
     updateStreak();
+    // 学習ログ: ここから 1レコード（ガイドつきは 5もんの セット、タイムアタックは 1セッション）。
+    // 「じぶんで しきを いれる」は きろく対象外なので begin() が うけつけない
+    StudySession.begin(mode, mode === "timed" ? TIMED_COUNT : SET_SIZE);
     document.body.classList.toggle("timed-mode", mode === "timed");
     // じぶんの しきは 1もんずつ。ほしや れんぞくは かぞえない
     document.body.classList.toggle("free-mode", mode === "free");
@@ -1076,6 +1091,7 @@
     state.stepIndex = 0;
     state.wrongCount = 0;
     state.firstTry = true;
+    StudySession.startProblem(problemId(state.problem), state.problem.type, state.problem.factKey);
     const badge = METHOD_LABELS[state.problem.type];
     $("#method-badge").innerHTML = badge ? `<span>${badge}</span>` : "";
     if (isTimed()) {
@@ -1183,6 +1199,7 @@
     state.accepting = false;
 
     if (val === step.answer) {
+      StudySession.answered(true);
       vibrate(30);
       if (!isTimed()) {
         Sound.correct();
@@ -1198,6 +1215,7 @@
     }
 
     // まちがい
+    StudySession.answered(false, state.buffer);
     Sound.wrong();
     vibrate([60, 40, 60]);
     state.wrongCount++;
@@ -1213,7 +1231,8 @@
 
     const sess = state.session;
     if (!isTimed() && state.wrongCount >= 3) {
-      // 3回 まちがえたら こたえを 見せて すすむ
+      // 3回 まちがえたら こたえを 見せて すすむ（この もんだいは じぶんで とけていない）
+      StudySession.usedAnswer();
       state.buffer = String(step.answer);
       renderBuffer();
       setFeedback(`こたえは ${step.answer} だよ。いっしょに すすもう！`, "bad");
@@ -1226,9 +1245,9 @@
         else showStep();
       }, 1400);
     } else {
-      const msg = isTimed()
-        ? "おしい！もういちど！"
-        : state.wrongCount === 2 ? "ヒント：" + step.hint : "おしい！もういちど！";
+      const showHint = !isTimed() && state.wrongCount === 2;
+      if (showHint) StudySession.usedHint();
+      const msg = showHint ? "ヒント：" + step.hint : "おしい！もういちど！";
       setFeedback(msg, "bad");
       state.buffer = "";
       setTimeout(() => {
@@ -1264,7 +1283,7 @@
     if (isTimed()) return timedProblemDone(p);
 
     // ---- ガイドつきモード ----
-    // じぶんで いれた しきは きろく（レベル・にがてカード）に のこさない
+    // じぶんで いれた しきは きろく（レベル・にがてカード・学習ログ）に のこさない
     if (!isFree()) {
       const modeKey = p.type;
       if (state.firstTry) {
@@ -1273,6 +1292,8 @@
         if (state.streak >= 10) notifyBadge(Store.earnBadge("streak10"));
       }
       updateStreak();
+      StudySession.setStreak(state.streak);
+      StudySession.finishProblem();
 
       const xp = isDev() ? (state.firstTry ? 15 : 8) : (state.firstTry ? 10 : 5);
       const { events } = Store.recordProblem({
@@ -1282,6 +1303,9 @@
 
       state.setSolved++;
       renderStars();
+      // 学習ログ: 5もん そろった ところで 1レコード。
+      // オーバーレイを 見ている あいだに タブを とじても のこるように、ここで 保存する
+      if (state.setSolved >= SET_SIZE) StudySession.finish("completed");
     }
 
     Sound.fanfare();
@@ -1353,6 +1377,7 @@
       mode: "timed", factKey: p.factKey, success: state.firstTry, xp: 8,
     });
     handleEvents(events);
+    StudySession.finishProblem();
     state.timedIndex++;
     if (state.timedIndex >= TIMED_COUNT) {
       finishTimed();
@@ -1367,12 +1392,25 @@
     stopTimer();
     const ms = performance.now() - state.timedStart;
     const sec = ms / 1000;
+    const prevBest = Store.data.modes.timed.bestMs;
     const { events } = Store.recordTimed(ms, state.timedMisses);
     handleEvents(events);
 
     const stars =
       state.timedMisses === 0 && sec <= 60 ? 3 :
       state.timedMisses <= 2 && sec <= 90 ? 2 : 1;
+
+    // 学習ログ: タイムアタックは 1レコード＝1セッション。
+    // タイムが 主指標なので さいこう記録との くらべも のこす
+    StudySession.finish("completed", {
+      ext: {
+        stars,
+        misses: state.timedMisses,
+        bestMs: prevBest ? Math.round(prevBest) : null,
+        isBest: !prevBest || ms < prevBest,
+        msPerProblem: Math.round(ms / TIMED_COUNT),
+      },
+    });
 
     $("#result-time").textContent = sec.toFixed(1) + "びょう";
     $("#result-miss").textContent = state.timedMisses + "かい";
@@ -1504,6 +1542,89 @@
       `<div class="record-name">${icon("bolt", "ic-timed")} タイムアタック<small>10もん あんざん</small></div>` +
       `<div class="record-nums">ちょうせん <b>${t.plays}</b> かい<br>さいこうタイム <b>${t.bestMs ? (t.bestMs / 1000).toFixed(1) + "びょう" : "--"}</b></div>`;
     list.appendChild(card);
+  }
+
+  // ---------- あしあと（学習ログの よみだし表示） ----------
+  /*
+     study.records.v1 を よみかえして、じぶんの のびを 見せる（§5.5）。
+     ・よみだし専用。学習ログへの 書きこみ・削除は しない
+     ・正答率は firstTryCorrect / attempted
+     ・時刻は 時間帯までに とどめる（§4.1）
+  */
+  const LOG_RANGE_DAYS = 7;
+  const LOG_LIST_MAX = 12;
+
+  function renderStudyLog() {
+    const all = StudyStats.load();
+    const sum = $("#log-summary");
+    const modes = $("#log-modes");
+    const list = $("#log-list");
+    sum.innerHTML = "";
+    modes.innerHTML = "";
+    list.innerHTML = "";
+
+    if (all.length === 0) {
+      $("#log-range").hidden = true;
+      $("#log-list-title").hidden = true;
+      sum.innerHTML = `<p class="log-empty">まだ あしあとが ないよ。<br>れんしゅうすると ここに たまります！</p>`;
+      return;
+    }
+
+    const week = StudyStats.lastDays(all, LOG_RANGE_DAYS);
+    const t = StudyStats.total(week.length ? week : all);
+    $("#log-range").hidden = false;
+    $("#log-list-title").hidden = false;
+    $("#log-range").textContent = week.length ? "この 1しゅうかん" : "これまで";
+    const rate = StudyStats.firstTryRate(t);
+
+    sum.innerHTML =
+      logTile("とりくんだ かい", t.records, "かい") +
+      logTile("といた もんだい", t.attempted, "もん") +
+      logTile("いっぱつせいかい", rate === null ? "--" : Math.round(rate * 100), rate === null ? "" : "%") +
+      logTile("がくしゅうじかん", StudyStats.durationLabel(t.activeMs || t.elapsedMs), "");
+
+    StudyStats.byMode(week.length ? week : all).forEach((m) => {
+      const r = StudyStats.firstTryRate(m);
+      const pct = r === null ? 0 : Math.round(r * 100);
+      const row = document.createElement("div");
+      row.className = "log-mode";
+      row.innerHTML =
+        `<div class="log-mode-name">${m.title}<small>${m.attempted}もん といた</small></div>` +
+        `<div class="log-mode-bar"><span style="width:${pct}%"></span></div>` +
+        `<div class="log-mode-pct">${r === null ? "--" : pct + "%"}</div>`;
+      modes.appendChild(row);
+    });
+
+    StudyStats.recent(all, LOG_LIST_MAX).forEach((r) => {
+      const s = r.summary || {};
+      const attempted = typeof s.attempted === "number" ? s.attempted : s.count;
+      const ftc = typeof s.firstTryCorrect === "number" ? s.firstTryCorrect : 0;
+      const row = document.createElement("div");
+      row.className = "log-item" + (r.status === "aborted" ? " aborted" : "");
+      row.innerHTML =
+        `<div class="log-item-when">${StudyStats.dateLabel(r.startedAt)}` +
+        `<small>${StudyStats.bandLabel(r.startedAt)}</small></div>` +
+        `<div class="log-item-body">` +
+          `<b>${(r.unit && r.unit.title) || r.mode}</b>` +
+          `<small>いっぱつせいかい ${ftc}／${attempted}もん` +
+          `・${StudyStats.durationLabel(r.elapsedMs)}` +
+          `${r.status === "aborted" ? "・とちゅうまで" : ""}</small>` +
+        `</div>` +
+        `<div class="log-item-stars">${logStars(ftc, s.count)}</div>`;
+      list.appendChild(row);
+    });
+  }
+
+  function logTile(label, value, unit) {
+    return `<div class="log-tile"><span class="log-tile-label">${label}</span>` +
+      `<span class="log-tile-value">${value}<small>${unit}</small></span></div>`;
+  }
+
+  /** さいだい5つの ほしで 初回正答を 見せる（もんだい数が おおい ときは わりあいで） */
+  function logStars(got, count) {
+    const n = Math.max(1, count || 1);
+    const on = Math.round((Math.min(got || 0, n) / n) * 5);
+    return icon("star", "st-on").repeat(on) + icon("star-o", "st-off").repeat(5 - on);
   }
 
   function renderMaps() {
@@ -1824,6 +1945,8 @@
         if (dest === "timed") return startMode("timed");
         if (dest === "quit") {
           const wasFree = isFree();
+          // 学習ログ: 「やめる」は 中断。とちゅうで やめた ことも たいせつな サイン（§5.4）
+          StudySession.finish("aborted");
           state.session++;        // 遅延コールバックを 無効化
           state.accepting = false;
           cancelTask();
@@ -1838,7 +1961,8 @@
           return showScreen(wasFree ? "free" : "home");
         }
         if (dest === "records") {
-          renderRecords(); renderMaps(); initCalendar(); renderCalendar(); renderBadges();
+          renderRecords(); renderStudyLog(); renderMaps();
+          initCalendar(); renderCalendar(); renderBadges();
         }
         showScreen(dest);
       });
@@ -1875,6 +1999,7 @@
       $("#overlay-set").classList.remove("show");
       state.setSolved = 0;
       renderStars();
+      StudySession.begin(state.mode, SET_SIZE);   // つぎの 5もんは あたらしい レコード
       nextProblem();
     });
 
@@ -1897,7 +2022,9 @@
     document.querySelectorAll(".btn-sound-play").forEach((b) => b.addEventListener("click", toggleSound));
 
     $("#btn-reset-records").addEventListener("click", () => {
-      if (confirm("きろくを ぜんぶ けしますか？")) {
+      // けすのは このアプリの きろくだけ。「あしあと」（study.records.v1）は
+      // ほかのアプリと 共有していて、まだ 送信していない ログが きえるため けさない（§1.2）
+      if (confirm("レベル・にがてカード・カレンダー・バッジを けしますか？\n（「あしあと」は のこります）")) {
         Store.resetAll();
         renderRecords(); renderMaps(); renderCalendar(); renderBadges();
       }
@@ -1921,6 +2048,19 @@
       if (e.key >= "0" && e.key <= "9") onDigit(e.key);
       else if (e.key === "Backspace") { e.preventDefault(); onDelete(); }
       else if (e.key === "Enter") onOk();
+    });
+
+    // 5ふん いじょう はなれると、そこまでが 中断の きろくに なる（§5.4）。
+    // もどってきて つづける ときは、ここから あたらしい レコードを はじめる
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      if (!$("#screen-play").classList.contains("active")) return;
+      if (isFree() || StudySession.isActive() || !state.problem) return;
+      if (document.querySelector(".overlay.show")) return;   // けっかを 見ている とちゅう
+      const planned = isTimed() ? TIMED_COUNT - state.timedIndex : SET_SIZE - state.setSolved;
+      if (planned <= 0) return;
+      StudySession.begin(state.mode, planned);
+      StudySession.startProblem(problemId(state.problem), state.problem.type, state.problem.factKey);
     });
   }
 

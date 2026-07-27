@@ -1,6 +1,7 @@
 /* さんすうブロック — Service Worker（オフライン対応） */
 
-const CACHE = "sansu-block-v7";
+const CACHE_PREFIX = "sansu-block-";
+const CACHE = CACHE_PREFIX + "v8";
 
 const ASSETS = [
   "./",
@@ -10,6 +11,9 @@ const ASSETS = [
   "./js/blocks.js",
   "./js/marks.js",
   "./js/storage.js",
+  "./js/studyLog.js",
+  "./js/studySession.js",
+  "./js/studyStats.js",
   "./js/main.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
@@ -23,11 +27,20 @@ self.addEventListener("install", (e) => {
   );
 });
 
+// ふるい キャッシュの そうじ。
+// このオリジン（gigayama.github.io）には ほかの 学習アプリも おかれているため、
+// けすのは 自アプリの プレフィックスが ついた キャッシュだけに かぎる。
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE)
+            .map((k) => caches.delete(k))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
