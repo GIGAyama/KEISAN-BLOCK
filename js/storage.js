@@ -221,6 +221,13 @@ const Store = (() => {
     }
   }
 
+  /**
+   * このアプリの きろく（レベル・にがてカード・カレンダー・バッジ）だけを けす。
+   *
+   * 学習ログ `study.records.v1` は 複数アプリ共通の キーであり、
+   * ここでは ぜったいに けさない。localStorage.clear() も つかわない。
+   * （まだ 送信していない ログが きえるため。共通スキーマ study.v1 §1.2）
+   */
   function resetAll() {
     data = defaults();
     save();
