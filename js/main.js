@@ -134,13 +134,19 @@
 
   /**
    * 学習ログの 設問ID（items[].q）。
-   * じっさいに 出した しきから きまる 不変の ID で、もんだい文は いれない。
-   * きほんもんだいは けいさんカードの キーと 一致し（A8+7 / S13-9）、
-   * はってんもんだいは 2けたの しき その ものが ID に なる（A25+8 / S33-6）。
+   *
+   * 設問IDの生成規則（仕様書 §2.10）にしたがい、**しき その ものを ID とする**
+   * （`8+7` / `13-9` / `25+8` / `48-9`）。20文字以内で 日本語を ふくまないため
+   * ハッシュ化は しない。しきは それ自体が 安定した 識別子であり、
+   * けいさんカード（`8+5`）・100マス計算（`8+9`）と 同じ かたちに なるので、
+   * 教師が アプリを またいで 「どの しきで つまずいたか」を たどれる。
+   *
+   * このアプリの 習熟度マップの キー（`A8+7` / `S13-9`）は アプリ内部の ものなので、
+   * 設問IDには つかわず `ext.factKeys` に 併記する。
    */
   function problemId(p) {
     const plus = p.op ? p.op === "+" : (p.type === "add" || p.type === "dev-add" || p.type === "free-add");
-    return `${plus ? "A" : "S"}${p.a}${plus ? "+" : "-"}${p.b}`;
+    return `${p.a}${plus ? "+" : "-"}${p.b}`;
   }
 
   /** にがてカードを 35%の かくりつで まぜる 適応出題 */
@@ -2050,18 +2056,32 @@
       else if (e.key === "Enter") onOk();
     });
 
-    // 5ふん いじょう はなれると、そこまでが 中断の きろくに なる（§5.4）。
-    // もどってきて つづける ときは、ここから あたらしい レコードを はじめる
+    // 5ふん いじょう はなれる／タブが すてられると、そこまでが 中断の きろくに なる（§5.4）。
+    // もどってきて つづける ときは、区切りの のこりぶんで あたらしい レコードを はじめる
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) return;
-      if (!$("#screen-play").classList.contains("active")) return;
-      if (isFree() || StudySession.isActive() || !state.problem) return;
-      if (document.querySelector(".overlay.show")) return;   // けっかを 見ている とちゅう
-      const planned = isTimed() ? TIMED_COUNT - state.timedIndex : SET_SIZE - state.setSolved;
-      if (planned <= 0) return;
-      StudySession.begin(state.mode, planned);
-      StudySession.startProblem(problemId(state.problem), state.problem.type, state.problem.factKey);
+      if (!document.hidden) resumeStudyRecord();
     });
+    // bfcache から もどった とき（pagehide で 確定した あと 学習が つづく ばあい）
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) resumeStudyRecord();
+    });
+  }
+
+  /**
+   * 中断きろくの あとに れんしゅうを つづける ときの あたらしい レコード。
+   * つぎの ばあいは はじめない（§5.4）。
+   *   ・きろく対象外の モード（じぶんで しきを いれる）
+   *   ・すでに きろくちゅうの レコードが ある
+   *   ・けっか表示などの オーバーレイが 出ている（まだ 学習を さいかいしていない）
+   */
+  function resumeStudyRecord() {
+    if (!$("#screen-play").classList.contains("active")) return;
+    if (isFree() || StudySession.isActive() || !state.problem) return;
+    if (document.querySelector(".overlay.show")) return;
+    const planned = isTimed() ? TIMED_COUNT - state.timedIndex : SET_SIZE - state.setSolved;
+    if (planned <= 0) return;
+    StudySession.begin(state.mode, planned);
+    StudySession.startProblem(problemId(state.problem), state.problem.type, state.problem.factKey);
   }
 
   buildKeypad();
