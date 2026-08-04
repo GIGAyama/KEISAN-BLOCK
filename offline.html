@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ff9f43">
+<meta name="color-scheme" content="light">
+<title>さんすうブロック — つながっていません</title>
+<!--
+  この画面は「ネットに つながらず、アプリ本体も 手元に ない」ときに 出る。
+  だから 外の ファイルにも JavaScript にも たよらない。
+  CSS は ここに 直接 書き、よみこみ直しは <a href> で する
+  （インラインの onclick は CSP に ひっかかる）。
+  文字は 本体と おなじ 端末フォントの ならびを つかうので、
+  Web フォントが 届かなくても 形が くずれない。
+-->
+<style>
+  :root { --ink: #3d3d4e; --orange: #ff9f43; --orange-deep: #b15c00; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Rounded Mplus 1c",
+      "Yu Gothic", "Meiryo", sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, #cdeeff, #fff6d8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(20px + env(safe-area-inset-top, 0px))
+             calc(20px + env(safe-area-inset-right, 0px))
+             calc(20px + env(safe-area-inset-bottom, 0px))
+             calc(20px + env(safe-area-inset-left, 0px));
+    min-height: 100dvh;
+    line-height: 1.8;
+  }
+  @supports not (min-height: 100dvh) { body { min-height: 100vh; } }
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
+    padding: 28px 22px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+  }
+  .blocks { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .blocks span {
+    width: 30px; height: 30px; border-radius: 8px; display: block;
+  }
+  .b1 { background: #ffb25e; }
+  .b2 { background: #6cb4ff; }
+  .b3 { background: #52d98a; }
+  h1 { font-size: clamp(22px, 5.5vw, 30px); margin: 0 0 10px; }
+  p  { font-size: clamp(15px, 3.6vw, 18px); margin: 0 0 8px; }
+  .small { font-size: clamp(13px, 3vw, 15px); color: #5a5a6b; }
+  .again {
+    display: inline-block;
+    margin-top: 20px;
+    min-height: 44px;
+    padding: 11px 30px;
+    border-radius: 999px;
+    background: var(--orange-deep);   /* 白ぬき文字が 4.5:1 を こえる 濃さ */
+    color: #fff;
+    font-size: clamp(17px, 4.4vw, 21px);
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .again:focus-visible { outline: 3px solid #0070e4; outline-offset: 3px; }
+  @media (forced-colors: active) {
+    .again { border: 2px solid ButtonText; }
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="blocks" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+    <h1>いま インターネットに<br>つながって いません</h1>
+    <p>Wi-Fi に つながってから、もういちど ひらいてね。</p>
+    <p class="small">いちど ひらいた ことが あれば、つぎからは<br>つながって いなくても つかえるよ。</p>
+    <a class="again" href="./">もういちど ひらく</a>
+  </main>
+</body>
+</html>

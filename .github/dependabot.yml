@@ -1,0 +1,10 @@
+# このアプリ本体は依存パッケージを持たない（CDN からとる実行コードも 0 バイト）。
+# ただし GitHub Actions の各アクションはバージョンが固定されているため、
+# ここが古くなると CI とデプロイだけが静かに壊れる。月に1度だけ見る。
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3

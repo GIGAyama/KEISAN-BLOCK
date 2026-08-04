@@ -2,22 +2,68 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- user-scalable=no と maximum-scale は書かない。
+     ごかいで ひろがるより、見えづらい子が 大きくできない ほうが こまる。
+     ごかいの ズームは body の touch-action: manipulation で ふせぐ。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- Content-Security-Policy。
+     このアプリは 外から とってくる 実行コードが 0 バイトで、
+     じかに 書いた スクリプトも イベント属性も 持たない。だから 'self' だけで しまる。
+     'unsafe-inline' を たすと CSP を 入れた いみが ほとんど なくなるので たさない。
+
+     ⚠️ この コメントの 中に script の 開きタグを そのまま 書かないこと。
+        品質ゲートの 正本（scripts/lib/project-quality.mjs）の extractScriptBlocks は
+        HTML コメントを 落とさずに 走るため、コメントの 中の 開きタグを
+        「じかに 書いた スクリプト」と 読み、そこから 次の 閉じタグまでを
+        JavaScript として 構文検査して 落ちる。正本を 直すまでの あいだの 約束ごと。
+
+     ⚠️ frame-ancestors は <meta> では むしされる（コンソールに 警告が 出るだけ）。
+        ほかのサイトへの うめこみを とめるには HTTP ヘッダーが 要るが、
+        GitHub Pages では たせない。独自ドメインや CDN を はさむ ときに 設定すること。 -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self';
+  style-src 'self';
+  img-src 'self' data: blob:;
+  font-src 'self';
+  connect-src 'self';
+  worker-src 'self';
+  manifest-src 'self';
+  media-src 'self';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+
 <meta name="theme-color" content="#ff9f43">
+<meta name="color-scheme" content="light">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="さんすうブロック">
 <title>さんすうブロック - けいさんれんしゅう</title>
+
+<!-- インストールの合図を いちばん先に うけとる。
+     Chrome は 条件が そろうと すぐ beforeinstallprompt を 出すため、
+     本体（js/main.js）は </body> の直前で おそすぎる。
+     通信が おそい端末で「インストール」ボタンが 出なくなる。
+     CSP に 'unsafe-inline' を たさずに すむよう、インラインでは なく
+     小さな 外部ファイルにして 同期で よみこむ。 -->
+<script src="install-hook.js"></script>
+
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<!-- apple-touch-icon には とうめいを ふくむ 画像を ささない。
+     iOS は とうめい部分を 黒で うめるため、ホーム画面で 四すみだけ 黒くなる。 -->
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <!-- ============ SVGアイコン定義（線画・currentColor） ============ -->
-<svg id="icon-defs" aria-hidden="true" style="display:none">
+<!-- style="display:none" は CSS へ うつした（style-src 'self' が style属性を とめるため） -->
+<svg id="icon-defs" aria-hidden="true">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6.5 9H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.5L11 19z"/><path d="M15 8.5a5 5 0 0 1 0 7"/><path d="M18 5.5a9 9 0 0 1 0 13"/></symbol>
@@ -42,6 +88,8 @@
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.3 9a2.7 2.7 0 1 1 3.6 2.5c-.8.3-.9 1-.9 1.7"/><path d="M12 17h.01"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/><path d="M4 20h16"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></symbol>
+  <symbol id="i-present" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M12 16v4"/><path d="M8 20h8"/><path d="m8.5 12 2.5-3 2 2.2L15.5 8"/></symbol>
+  <symbol id="i-present-off" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M12 16v4"/><path d="M8 20h8"/><path d="m9 12 6-5"/></symbol>
 </svg>
 
 <div id="app">
@@ -51,9 +99,14 @@
     <header class="home-header">
       <div class="logo">
         <span class="logo-block lb-a"></span><span class="logo-block lb-b"></span>
-        <span class="logo-text">さんすうブロック</span>
+        <h1 class="logo-text">さんすうブロック</h1>
       </div>
-      <button class="icon-btn" id="btn-sound" aria-label="おとの おん・おふ"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></button>
+      <div class="header-btns">
+        <!-- 一斉授業（電子黒板）で 教室の うしろから 読めるようにする。
+             §2-11。おす人は 先生なので、ことばは おとな向けで よい。 -->
+        <button class="icon-btn btn-present" aria-label="大きく表示（電子黒板）" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-present"/></svg></button>
+        <button class="icon-btn" id="btn-sound" aria-label="おとの おん・おふ"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></button>
+      </div>
     </header>
 
     <div class="level-card">
@@ -119,7 +172,7 @@
   <section id="screen-sub-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2>ひきざんの さくせんを えらぼう</h2>
+      <h1>ひきざんの さくせんを えらぼう</h1>
     </header>
     <div class="menu">
       <button class="menu-btn menu-genka" data-mode="genka">
@@ -143,7 +196,7 @@
   <section id="screen-dev-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2><svg class="icon h-icon ic-dev" aria-hidden="true"><use href="#i-rocket"/></svg> はってんもんだい</h2>
+      <h1><svg class="icon h-icon ic-dev" aria-hidden="true"><use href="#i-rocket"/></svg> はってんもんだい</h1>
     </header>
     <p class="select-note">おおきな かずでも「10の まとまり」の かんがえかたが つかえるよ！</p>
     <div class="menu">
@@ -168,7 +221,7 @@
   <section id="screen-free" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2><svg class="icon h-icon ic-free" aria-hidden="true"><use href="#i-pencil"/></svg> じぶんで しきを いれる</h2>
+      <h1><svg class="icon h-icon ic-free" aria-hidden="true"><use href="#i-pencil"/></svg> じぶんで しきを いれる</h1>
     </header>
     <p class="select-note">わからない もんだいを いれると、ブロックで いっしょに かんがえるよ。</p>
 
@@ -221,6 +274,7 @@
         </div>
       </div>
       <div id="streak-badge" title="れんぞく せいかい"><svg class="icon" aria-hidden="true"><use href="#i-flame"/></svg><span id="streak-num">0</span></div>
+      <button class="icon-btn btn-present" aria-label="大きく表示（電子黒板）" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-present"/></svg></button>
       <button class="icon-btn btn-sound-play" aria-label="おと"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></button>
     </header>
 
@@ -243,7 +297,7 @@
           <span id="task-remain"></span>
           <button id="btn-task-auto" class="task-auto" type="button">じどうで うごかす</button>
         </div>
-        <div id="feedback" aria-live="assertive"></div>
+        <div id="feedback" role="alert" aria-live="assertive"></div>
         <div id="keypad"></div>
         <div id="explain-bar" hidden>
           <button type="button" class="explain-btn" id="btn-explain">こたえを 見る</button>
@@ -256,7 +310,7 @@
   <section id="screen-records" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2>がんばりの きろく</h2>
+      <h1>がんばりの きろく</h1>
     </header>
     <nav class="tab-bar">
       <button class="tab-btn active" data-tab="stats">せいせき</button>
@@ -277,7 +331,7 @@
       <div class="log-range" id="log-range" hidden>この 1しゅうかん</div>
       <div id="log-summary" class="log-summary"></div>
       <div id="log-modes" class="log-modes"></div>
-      <h3 class="log-title" id="log-list-title" hidden>さいきんの とりくみ</h3>
+      <h2 class="log-title" id="log-list-title" hidden>さいきんの とりくみ</h2>
       <div id="log-list" class="log-list"></div>
     </div>
 
@@ -288,9 +342,9 @@
         <span class="cell-sample cs-red"></span>にがて
         <span class="cell-sample cs-gray"></span>まだ
       </p>
-      <h3 class="map-title"><svg class="icon mt-add" aria-hidden="true"><use href="#i-cherry"/></svg> たしざん</h3>
+      <h2 class="map-title"><svg class="icon mt-add" aria-hidden="true"><use href="#i-cherry"/></svg> たしざん</h2>
       <div class="map-scroll"><div id="map-add" class="fact-map"></div></div>
-      <h3 class="map-title"><svg class="icon mt-sub" aria-hidden="true"><use href="#i-ten"/></svg> ひきざん</h3>
+      <h2 class="map-title"><svg class="icon mt-sub" aria-hidden="true"><use href="#i-ten"/></svg> ひきざん</h2>
       <div class="map-scroll"><div id="map-sub" class="fact-map"></div></div>
     </div>
 
@@ -310,7 +364,7 @@
   </section>
 
   <!-- ============ オーバーレイ ============ -->
-  <div id="overlay-correct" class="overlay">
+  <div id="overlay-correct" class="overlay" role="dialog" aria-modal="true" aria-labelledby="correct-text">
     <div class="overlay-card">
       <div id="correct-text" class="big-praise">せいかい！</div>
       <div id="howto-card" class="howto-card" hidden>
@@ -324,9 +378,9 @@
     </div>
   </div>
 
-  <div id="overlay-set" class="overlay">
+  <div id="overlay-set" class="overlay" role="dialog" aria-modal="true" aria-labelledby="set-title">
     <div class="overlay-card">
-      <div class="big-praise">5もん クリア！</div>
+      <div class="big-praise" id="set-title">5もん クリア！</div>
       <div id="set-stars" class="set-stars"></div>
       <p id="set-message">よく がんばったね！</p>
       <div class="overlay-btns">
@@ -336,7 +390,7 @@
     </div>
   </div>
 
-  <div id="overlay-free-done" class="overlay">
+  <div id="overlay-free-done" class="overlay" role="dialog" aria-modal="true" aria-labelledby="free-done-eq">
     <div class="overlay-card">
       <div class="big-praise" id="free-done-eq">できたね！</div>
       <div class="overlay-btns">
@@ -347,9 +401,9 @@
     </div>
   </div>
 
-  <div id="overlay-result" class="overlay">
+  <div id="overlay-result" class="overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
     <div class="overlay-card">
-      <div class="big-praise"><svg class="icon ic-timed" aria-hidden="true"><use href="#i-bolt"/></svg> ゴール！</div>
+      <div class="big-praise" id="result-title"><svg class="icon ic-timed" aria-hidden="true"><use href="#i-bolt"/></svg> ゴール！</div>
       <div id="result-stars" class="set-stars"></div>
       <div class="result-rows">
         <div class="result-row"><span>タイム</span><b id="result-time">--</b></div>
@@ -366,6 +420,14 @@
   <div id="confetti-layer" aria-hidden="true"></div>
 
   <div id="toast-area" aria-live="polite"></div>
+
+  <!-- あたらしい ばんが とどいた ときの おしらせ。
+       おされるまで 切りかえない。れんしゅう中に かってに 入れかわると
+       うちかけの こたえと ならべた ブロックが きえるため。 -->
+  <div id="update-bar" class="update-bar" role="status" hidden>
+    <span class="update-text">あたらしい ばんが あります</span>
+    <button type="button" id="btn-update" class="update-btn">さいしんに する</button>
+  </div>
 
 </div>
 <script src="js/audio.js"></script>

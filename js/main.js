@@ -1594,10 +1594,15 @@
       const pct = r === null ? 0 : Math.round(r * 100);
       const row = document.createElement("div");
       row.className = "log-mode";
+      // ぼうの ながさは style属性では なく CSSOM で あてる。
+      // CSP の style-src 'self' は「HTML に 書かれた style属性」を とめるため、
+      // innerHTML の なかに style="width:..." と 書くと ぼうが のびなくなる。
+      // 要素の .style へ 代入する ぶんには とめられない。
       row.innerHTML =
         `<div class="log-mode-name">${m.title}<small>${m.attempted}もん といた</small></div>` +
-        `<div class="log-mode-bar"><span style="width:${pct}%"></span></div>` +
+        `<div class="log-mode-bar"><span></span></div>` +
         `<div class="log-mode-pct">${r === null ? "--" : pct + "%"}</div>`;
+      row.querySelector(".log-mode-bar span").style.width = pct + "%";
       modes.appendChild(row);
     });
 
@@ -1750,28 +1755,222 @@
   }
 
   // ---------- PWA ----------
-  let deferredInstall = null;
 
-  function setupPwa() {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => { /* オフライン非対応でも動く */ });
-    }
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredInstall = e;
-      $("#btn-install").hidden = false;
-    });
-    $("#btn-install").addEventListener("click", async () => {
-      if (!deferredInstall) return;
-      deferredInstall.prompt();
-      await deferredInstall.userChoice;
-      deferredInstall = null;
-      $("#btn-install").hidden = true;
-    });
-    window.addEventListener("appinstalled", () => {
-      $("#btn-install").hidden = true;
+  /**
+   * インストールの ボタン。
+   * 合図（beforeinstallprompt）は install-hook.js が <head> の さきで
+   * うけとって ためている。ここでは その ありなしを 見るだけ。
+   * 本体は </body> の 直前で よみこまれるため、ここで listener を つけても
+   * 合図には まにあわない（つけた ときには もう とんだ あと）。
+   *
+   * ボタンは 案内できる ときだけ 出す。
+   * 出せない ボタンを おいておくと「おしても なにも おきない」と 言われる。
+   */
+  function setupInstallButton() {
+    const btn = $("#btn-install");
+    const isStandalone = matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true;
+
+    const sync = () => {
+      btn.hidden = isStandalone || window.__pwaInstalled || !window.__pwaInstallPrompt;
+    };
+
+    window.addEventListener("pwa-install-available", sync);
+    window.addEventListener("pwa-installed", () => {
+      sync();
       toast(`${icon("download", "t-blue")}インストール ありがとう！`, "toast-badge");
     });
+
+    btn.addEventListener("click", async () => {
+      const prompt = window.__pwaInstallPrompt;
+      if (!prompt) return;
+      prompt.prompt();
+      await prompt.userChoice;
+      window.__pwaInstallPrompt = null;
+      sync();
+    });
+
+    sync();   // install-hook.js が すでに うけとって いる ばあいを ひろう
+  }
+
+  /**
+   * あたらしい ばんの おしらせ。
+   *
+   * ⚠️ controllerchange は、はじめて ひらいた ときにも とんでくる
+   *    （activate の clients.claim() で ページが 管理下に 入るため）。
+   *    これを すなおに うけると 初回訪問が かならず 1回 リロードされ、
+   *    ならべたばかりの ブロックと うちかけの こたえが きえる。
+   *
+   * ⚠️「もともと 管理下だったか」で 分ける なおし方は べつの 形で こわれる。
+   *    入れた 直後に 更新を おした ばあい、切りかわったのに 読みこみ直されない。
+   *    見るべきは「利用者が おしたか どうか」だけ。
+   */
+  function setupUpdateNotice(registration) {
+    const bar = $("#update-bar");
+    const btn = $("#btn-update");
+    let userAskedUpdate = false;
+    let reloading = false;
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!userAskedUpdate || reloading) return;
+      reloading = true;
+      location.reload();
+    });
+
+    const notify = (worker) => {
+      bar.hidden = false;
+      btn.onclick = () => {
+        userAskedUpdate = true;
+        btn.disabled = true;
+        worker.postMessage({ type: "SKIP_WAITING" });
+      };
+    };
+
+    registration.addEventListener("updatefound", () => {
+      const sw = registration.installing;
+      if (!sw) return;
+      sw.addEventListener("statechange", () => {
+        // controller が いる＝初回インストールでは なく 更新。
+        // 初回で しらせると「入れた 直後に 更新が あります」と 出て こんらんする。
+        if (sw.state === "installed" && navigator.serviceWorker.controller) notify(sw);
+      });
+    });
+
+    // まえのうちに 入っていた ばあいも ひろう
+    if (registration.waiting && navigator.serviceWorker.controller) notify(registration.waiting);
+  }
+
+  function setupPwa() {
+    setupInstallButton();
+
+    if (!("serviceWorker" in navigator)) return;
+
+    const start = () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(setupUpdateNotice)
+        .catch(() => { /* オフライン非対応でも うごく */ });
+    };
+
+    // ⚠️ ここで load を まつだけに すると、すでに load が おわって いる ばあいに
+    //    リスナーが 二度と よばれず、Service Worker が 登録されない。
+    //    かならず readyState を 見て 分ける。
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+  }
+
+  // ---------- オーバーレイ（モーダル）の キーボード対応 ----------
+
+  /**
+   * オーバーレイが 出ている あいだ、
+   *   ・フォーカスを なかに とじこめる
+   *   ・うしろの 画面を 読み上げ・Tab の たいしょうから はずす（inert）
+   *   ・Esc で とじる
+   *
+   * Esc の ふるまいは 新しく つくらない。
+   * すでに ある「すすむ」「ホームへ」の 処理へ つなぐ。
+   * 別に つくると、おなじ 見た目なのに 出口だけ ちがう ことに なる。
+   *
+   * ⚠️「けいさんの しかた」が 出ている あいだの 5びょうは、
+   *    ボタンが おせない。Esc でも すすめない（読む じかんを 確保するため）。
+   */
+  const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function setupOverlayA11y() {
+    const overlays = Array.from(document.querySelectorAll(".overlay"));
+    const screens = Array.from(document.querySelectorAll(".screen"));
+    let lastFocus = null;
+
+    const openOverlay = () => overlays.find((o) => o.classList.contains("show")) || null;
+
+    const onShow = (ov) => {
+      lastFocus = document.activeElement;
+      screens.forEach((s) => { s.inert = true; });
+      const first = ov.querySelector(FOCUSABLE);
+      if (first) first.focus();
+    };
+
+    const onHide = () => {
+      screens.forEach((s) => { s.inert = false; });
+      if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+      lastFocus = null;
+    };
+
+    overlays.forEach((ov) => {
+      let was = ov.classList.contains("show");
+      new MutationObserver(() => {
+        const now = ov.classList.contains("show");
+        if (now === was) return;
+        was = now;
+        if (now) onShow(ov); else if (!openOverlay()) onHide();
+      }).observe(ov, { attributes: true, attributeFilter: ["class"] });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      const ov = openOverlay();
+      if (!ov) return;
+
+      if (e.key === "Tab") {
+        const items = Array.from(ov.querySelectorAll(FOCUSABLE))
+          .filter((el) => el.offsetParent !== null || el === document.activeElement);
+        if (!items.length) { e.preventDefault(); return; }
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        return;
+      }
+
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (ov.id === "overlay-correct") {
+        const next = ov.querySelector("#btn-howto-next");
+        const howtoShown = !$("#howto-card").hidden;
+        if (howtoShown) { if (next && !next.disabled) next.click(); }
+        else ov.click();          // 「けいさんの しかた」が 無い ときの すすみ方と おなじ
+        return;
+      }
+      // のこりは「ホームへ」に つなぐ。とじる＝アプリに もどる、で そろえる。
+      const home = ov.querySelector("#btn-set-home, #btn-free-home, #btn-result-home");
+      if (home) home.click();
+    }, true);
+  }
+
+  // ---------- 提示モード（電子黒板・一斉授業） ----------
+  const PRESENT_KEY = "keisan-block-present";
+
+  function applyPresentation(on) {
+    document.body.classList.toggle("presentation", on);
+    document.querySelectorAll(".btn-present").forEach((b) => {
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.innerHTML = icon(on ? "present-off" : "present");
+      b.setAttribute("aria-label", on ? "大きく表示を やめる" : "大きく表示（電子黒板）");
+    });
+  }
+
+  function setupPresentation() {
+    let on = false;
+    try { on = localStorage.getItem(PRESENT_KEY) === "1"; } catch { /* ITP などで 読めない */ }
+    applyPresentation(on);
+
+    document.querySelectorAll(".btn-present").forEach((b) => {
+      b.addEventListener("click", async () => {
+        on = !on;
+        applyPresentation(on);
+        try { localStorage.setItem(PRESENT_KEY, on ? "1" : "0"); } catch { /* 保存できなくても うごく */ }
+
+        // 電子黒板では 画面いっぱいに したい。
+        // ブラウザが ことわる ことも あるので、失敗しても 表示は 大きいままに する。
+        try {
+          if (on && !document.fullscreenElement) await document.documentElement.requestFullscreen();
+          else if (!on && document.fullscreenElement) await document.exitFullscreen();
+        } catch { /* ゆるされない ばあいは そのまま */ }
+      });
+    });
+
+    // ブラウザがわ（Esc など）で ぜんがめんを ぬけた ときは、表示の 大きさは そのまま。
+    // 「大きく表示」は ぜんがめんとは べつの 設定として あつかう。
   }
 
   // ---------- じぶんで しきを いれる がめん ----------
@@ -2088,6 +2287,8 @@
   bindFreeScreen();
   bindEvents();
   applySound();
+  setupOverlayA11y();
+  setupPresentation();
   setupPwa();
   renderHome();
 })();
