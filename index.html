@@ -93,7 +93,7 @@
     <header class="home-header">
       <div class="logo">
         <span class="logo-block lb-a"></span><span class="logo-block lb-b"></span>
-        <span class="logo-text">さんすうブロック</span>
+        <h1 class="logo-text">さんすうブロック</h1>
       </div>
       <div class="header-btns">
         <!-- 一斉授業（電子黒板）で 教室の うしろから 読めるようにする。
@@ -166,7 +166,7 @@
   <section id="screen-sub-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2>ひきざんの さくせんを えらぼう</h2>
+      <h1>ひきざんの さくせんを えらぼう</h1>
     </header>
     <div class="menu">
       <button class="menu-btn menu-genka" data-mode="genka">
@@ -190,7 +190,7 @@
   <section id="screen-dev-select" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2><svg class="icon h-icon ic-dev" aria-hidden="true"><use href="#i-rocket"/></svg> はってんもんだい</h2>
+      <h1><svg class="icon h-icon ic-dev" aria-hidden="true"><use href="#i-rocket"/></svg> はってんもんだい</h1>
     </header>
     <p class="select-note">おおきな かずでも「10の まとまり」の かんがえかたが つかえるよ！</p>
     <div class="menu">
@@ -215,7 +215,7 @@
   <section id="screen-free" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2><svg class="icon h-icon ic-free" aria-hidden="true"><use href="#i-pencil"/></svg> じぶんで しきを いれる</h2>
+      <h1><svg class="icon h-icon ic-free" aria-hidden="true"><use href="#i-pencil"/></svg> じぶんで しきを いれる</h1>
     </header>
     <p class="select-note">わからない もんだいを いれると、ブロックで いっしょに かんがえるよ。</p>
 
@@ -291,7 +291,7 @@
           <span id="task-remain"></span>
           <button id="btn-task-auto" class="task-auto" type="button">じどうで うごかす</button>
         </div>
-        <div id="feedback" aria-live="assertive"></div>
+        <div id="feedback" role="alert" aria-live="assertive"></div>
         <div id="keypad"></div>
         <div id="explain-bar" hidden>
           <button type="button" class="explain-btn" id="btn-explain">こたえを 見る</button>
@@ -304,7 +304,7 @@
   <section id="screen-records" class="screen">
     <header class="simple-header">
       <button class="icon-btn btn-back" data-goto="home" aria-label="もどる"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
-      <h2>がんばりの きろく</h2>
+      <h1>がんばりの きろく</h1>
     </header>
     <nav class="tab-bar">
       <button class="tab-btn active" data-tab="stats">せいせき</button>
@@ -325,7 +325,7 @@
       <div class="log-range" id="log-range" hidden>この 1しゅうかん</div>
       <div id="log-summary" class="log-summary"></div>
       <div id="log-modes" class="log-modes"></div>
-      <h3 class="log-title" id="log-list-title" hidden>さいきんの とりくみ</h3>
+      <h2 class="log-title" id="log-list-title" hidden>さいきんの とりくみ</h2>
       <div id="log-list" class="log-list"></div>
     </div>
 
@@ -336,9 +336,9 @@
         <span class="cell-sample cs-red"></span>にがて
         <span class="cell-sample cs-gray"></span>まだ
       </p>
-      <h3 class="map-title"><svg class="icon mt-add" aria-hidden="true"><use href="#i-cherry"/></svg> たしざん</h3>
+      <h2 class="map-title"><svg class="icon mt-add" aria-hidden="true"><use href="#i-cherry"/></svg> たしざん</h2>
       <div class="map-scroll"><div id="map-add" class="fact-map"></div></div>
-      <h3 class="map-title"><svg class="icon mt-sub" aria-hidden="true"><use href="#i-ten"/></svg> ひきざん</h3>
+      <h2 class="map-title"><svg class="icon mt-sub" aria-hidden="true"><use href="#i-ten"/></svg> ひきざん</h2>
       <div class="map-scroll"><div id="map-sub" class="fact-map"></div></div>
     </div>
 
@@ -358,7 +358,7 @@
   </section>
 
   <!-- ============ オーバーレイ ============ -->
-  <div id="overlay-correct" class="overlay">
+  <div id="overlay-correct" class="overlay" role="dialog" aria-modal="true" aria-labelledby="correct-text">
     <div class="overlay-card">
       <div id="correct-text" class="big-praise">せいかい！</div>
       <div id="howto-card" class="howto-card" hidden>
@@ -372,9 +372,9 @@
     </div>
   </div>
 
-  <div id="overlay-set" class="overlay">
+  <div id="overlay-set" class="overlay" role="dialog" aria-modal="true" aria-labelledby="set-title">
     <div class="overlay-card">
-      <div class="big-praise">5もん クリア！</div>
+      <div class="big-praise" id="set-title">5もん クリア！</div>
       <div id="set-stars" class="set-stars"></div>
       <p id="set-message">よく がんばったね！</p>
       <div class="overlay-btns">
@@ -384,7 +384,7 @@
     </div>
   </div>
 
-  <div id="overlay-free-done" class="overlay">
+  <div id="overlay-free-done" class="overlay" role="dialog" aria-modal="true" aria-labelledby="free-done-eq">
     <div class="overlay-card">
       <div class="big-praise" id="free-done-eq">できたね！</div>
       <div class="overlay-btns">
@@ -395,9 +395,9 @@
     </div>
   </div>
 
-  <div id="overlay-result" class="overlay">
+  <div id="overlay-result" class="overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
     <div class="overlay-card">
-      <div class="big-praise"><svg class="icon ic-timed" aria-hidden="true"><use href="#i-bolt"/></svg> ゴール！</div>
+      <div class="big-praise" id="result-title"><svg class="icon ic-timed" aria-hidden="true"><use href="#i-bolt"/></svg> ゴール！</div>
       <div id="result-stars" class="set-stars"></div>
       <div class="result-rows">
         <div class="result-row"><span>タイム</span><b id="result-time">--</b></div>

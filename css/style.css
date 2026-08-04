@@ -178,6 +178,7 @@ body::before {
   font-size: 21px;
   font-weight: bold;
   letter-spacing: 1px;
+  margin: 0;              /* h1 の 既定の よはくを うちけす */
 }
 
 .level-card {
@@ -431,12 +432,12 @@ body::before {
   margin-bottom: 16px;
 }
 
-.simple-header h2 {
+.simple-header h1 {
   font-size: 20px;
   margin: 0;
 }
 
-.simple-header h2 .h-icon {
+.simple-header h1 .h-icon {
   width: 22px;
   height: 22px;
   vertical-align: -4px;

@@ -1858,6 +1858,85 @@
     else window.addEventListener("load", start, { once: true });
   }
 
+  // ---------- オーバーレイ（モーダル）の キーボード対応 ----------
+
+  /**
+   * オーバーレイが 出ている あいだ、
+   *   ・フォーカスを なかに とじこめる
+   *   ・うしろの 画面を 読み上げ・Tab の たいしょうから はずす（inert）
+   *   ・Esc で とじる
+   *
+   * Esc の ふるまいは 新しく つくらない。
+   * すでに ある「すすむ」「ホームへ」の 処理へ つなぐ。
+   * 別に つくると、おなじ 見た目なのに 出口だけ ちがう ことに なる。
+   *
+   * ⚠️「けいさんの しかた」が 出ている あいだの 5びょうは、
+   *    ボタンが おせない。Esc でも すすめない（読む じかんを 確保するため）。
+   */
+  const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function setupOverlayA11y() {
+    const overlays = Array.from(document.querySelectorAll(".overlay"));
+    const screens = Array.from(document.querySelectorAll(".screen"));
+    let lastFocus = null;
+
+    const openOverlay = () => overlays.find((o) => o.classList.contains("show")) || null;
+
+    const onShow = (ov) => {
+      lastFocus = document.activeElement;
+      screens.forEach((s) => { s.inert = true; });
+      const first = ov.querySelector(FOCUSABLE);
+      if (first) first.focus();
+    };
+
+    const onHide = () => {
+      screens.forEach((s) => { s.inert = false; });
+      if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+      lastFocus = null;
+    };
+
+    overlays.forEach((ov) => {
+      let was = ov.classList.contains("show");
+      new MutationObserver(() => {
+        const now = ov.classList.contains("show");
+        if (now === was) return;
+        was = now;
+        if (now) onShow(ov); else if (!openOverlay()) onHide();
+      }).observe(ov, { attributes: true, attributeFilter: ["class"] });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      const ov = openOverlay();
+      if (!ov) return;
+
+      if (e.key === "Tab") {
+        const items = Array.from(ov.querySelectorAll(FOCUSABLE))
+          .filter((el) => el.offsetParent !== null || el === document.activeElement);
+        if (!items.length) { e.preventDefault(); return; }
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        return;
+      }
+
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (ov.id === "overlay-correct") {
+        const next = ov.querySelector("#btn-howto-next");
+        const howtoShown = !$("#howto-card").hidden;
+        if (howtoShown) { if (next && !next.disabled) next.click(); }
+        else ov.click();          // 「けいさんの しかた」が 無い ときの すすみ方と おなじ
+        return;
+      }
+      // のこりは「ホームへ」に つなぐ。とじる＝アプリに もどる、で そろえる。
+      const home = ov.querySelector("#btn-set-home, #btn-free-home, #btn-result-home");
+      if (home) home.click();
+    }, true);
+  }
+
   // ---------- 提示モード（電子黒板・一斉授業） ----------
   const PRESENT_KEY = "keisan-block-present";
 
@@ -2208,6 +2287,7 @@
   bindFreeScreen();
   bindEvents();
   applySound();
+  setupOverlayA11y();
   setupPresentation();
   setupPwa();
   renderHome();
