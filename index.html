@@ -9,8 +9,14 @@
 
 <!-- Content-Security-Policy。
      このアプリは 外から とってくる 実行コードが 0 バイトで、
-     インラインの <script> も onclick= も 持たない。だから 'self' だけで しまる。
+     じかに 書いた スクリプトも イベント属性も 持たない。だから 'self' だけで しまる。
      'unsafe-inline' を たすと CSP を 入れた いみが ほとんど なくなるので たさない。
+
+     ⚠️ この コメントの 中に script の 開きタグを そのまま 書かないこと。
+        品質ゲートの 正本（scripts/lib/project-quality.mjs）の extractScriptBlocks は
+        HTML コメントを 落とさずに 走るため、コメントの 中の 開きタグを
+        「じかに 書いた スクリプト」と 読み、そこから 次の 閉じタグまでを
+        JavaScript として 構文検査して 落ちる。正本を 直すまでの あいだの 約束ごと。
 
      ⚠️ frame-ancestors は <meta> では むしされる（コンソールに 警告が 出るだけ）。
         ほかのサイトへの うめこみを とめるには HTTP ヘッダーが 要るが、

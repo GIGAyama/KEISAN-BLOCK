@@ -1,0 +1,53 @@
+name: CI
+
+# pull_request でも動かす。push: [main] だけだと、
+# PR の時点で落ちていることに気づけないまま main に入る。
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 品質ゲートとテスト
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 依存パッケージを持たないので npm ci は無い。
+      - name: 品質ゲート（GIGA Standard Part I）
+        run: npm run check
+
+      - name: テスト
+        run: npm test
+
+      - name: JavaScript の構文
+        run: |
+          for f in js/*.js sw.js install-hook.js scripts/*.mjs scripts/lib/*.mjs; do
+            node --check "$f"
+          done
+
+      - name: manifest.webmanifest が JSON として読めるか
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
+
+      # アイコンは tools/make-icons.py の生成物。手で置きかえると
+      # maskable のセーフゾーンが崩れるので、作りなおして差分が出ないか見る。
+      - name: アイコンが生成物と一致するか
+        run: |
+          python3 -m pip install --quiet pillow numpy
+          python3 tools/make-icons.py
+          if ! git diff --quiet -- icons/; then
+            echo "::error::icons/ が tools/make-icons.py の出力と一致しません。手で置きかえていませんか。"
+            git diff --stat -- icons/
+            exit 1
+          fi
