@@ -3,15 +3,23 @@
   "short_name": "さんすうブロック",
   "description": "算数ブロックとさくらんぼ計算で、繰り上がり・繰り下がりの計算をマスターする小学1年生向け学習アプリ",
   "lang": "ja",
-  "start_url": "./",
-  "scope": "./",
+  "dir": "ltr",
+
+  "id": "/KEISAN-BLOCK/",
+  "start_url": "/KEISAN-BLOCK/",
+  "scope": "/KEISAN-BLOCK/",
+
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "orientation": "any",
   "background_color": "#cdeeff",
   "theme_color": "#ff9f43",
+  "categories": ["education", "kids"],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

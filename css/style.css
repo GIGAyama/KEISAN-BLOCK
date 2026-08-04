@@ -13,11 +13,22 @@
   --pink: #ff7eb3;
   --purple: #a06cd5;
   --ink: #3d3d4e;
-  --mark: #f4701f;        /* しきに かきこむ しるし（きょうかしょの えんぴつの いろ） */
+  --mark: #af4809;        /* しきに かきこむ しるし（きょうかしょの えんぴつの いろ）。
+                             水色の しきの 上で 4.5:1 に とどく こさに した */
   --paper: #ffffff;
   --bg-top: #cdeeff;
   --bg-bottom: #fff6d8;
   --slot-line: #b9c4d0;
+
+  /* 面用（白ぬき文字を のせられる 濃さ）と 文字用（白い地で 4.5:1）を
+     2段階に わける。ひとつの 値で 両方を まかなうと、かならず どちらかが
+     とどかない。もとの 色相は 変えず、明度だけ さげている。 */
+  --orange-surface: #b15c00;  --orange-surface-d: #8d4c0f;  --orange-text: #b16013;
+  --blue-surface:   #0070e4;  --blue-surface-d:   #205ea2;  --blue-text:   #256dbc;
+  --amber-surface:  #946c00;  --amber-surface-d:  #7c5607;
+  --green-surface:  #1e8349;  --green-surface-d:  #136b37;  --green-text:  #198646;
+  --purple-surface: #9751d1;  --purple-surface-d: #793eb6;  --purple-text: #9358cf;
+  --pink-surface:   #e30059;  --pink-surface-d:   #af215c;
   --radius: 18px;
   --shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
   /* 端末幅に応じて なめらかに拡大縮小する流体サイズ */
@@ -29,6 +40,34 @@
   --cherry-gap: clamp(16px, 4.5vw, 26px);
   --key-h: clamp(54px, 9.5vmin, 78px);
   --key-font: clamp(24px, 4.8vmin, 34px);
+
+  /* ノッチ・ホームバー・丸角の ぶん */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+/* 児童むけの がめんなので 配色は 固定する（かってに 暗くしない） */
+:root { color-scheme: light; }
+
+/* ---------- タップ領域 44px ----------
+   ボタンじたいを 44px に すると、つめて ならべた タブや ＋− が
+   おりかえって べつの こわれかたを する。
+   見た目は そのままに、疑似要素で あたり判定だけを ひろげる。
+   （input は 疑似要素を もてないので、チェックボックスの たぐいは
+     かこみの <label> がわで 44px を 確保する） */
+.tap-44 { position: relative; }
+.tap-44::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 * {
@@ -83,8 +122,21 @@ body::before {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
 }
+
+/* dvh が つかえない ふるい端末むけ。dvh を さきに 書いて @supports で うける。 */
+@supports not (min-height: 100dvh) {
+  #app { min-height: 100vh; }
+}
+
+/* ひっぱり更新の ぼうはつを ふせぐ。ブロックを ならべている とちゅうに
+   画面ごと 下へ ひっぱられると、おいた ブロックが 見えなくなる。 */
+#app, .screen, .tab-panel, .map-scroll { overscroll-behavior: contain; }
+
+/* CSP の style-src 'self' は style属性を とめるため、
+   もとは index.html に style="display:none" と 書いていたものを ここへ うつした。 */
+#icon-defs { display: none; }
 
 /* ---------- 画面の切りかえ ---------- */
 .screen {
@@ -249,7 +301,7 @@ body::before {
   padding: 4px 12px;
   font-size: 13px;
   font-weight: bold;
-  color: #c05e00;
+  color: #ae5500;
 }
 
 .mode-grid {
@@ -282,17 +334,18 @@ body::before {
 
 .mode-icon { width: 32px; height: 32px; margin-bottom: 3px; }
 .mode-name { font-size: 19px; font-weight: bold; }
-.mode-desc { font-size: 12px; opacity: 0.92; }
+.mode-desc { font-size: 12px; }
 
-.mc-add { background: linear-gradient(180deg, #ffb25e, var(--orange-dark)); }
-.mc-sub { background: linear-gradient(180deg, #6cb4ff, var(--blue-dark)); }
-.mc-timed { background: linear-gradient(180deg, #ffd35c, #e8a10e); }
-.mc-dev { background: linear-gradient(180deg, #52d98a, var(--green-dark)); }
-.mc-rec { background: linear-gradient(180deg, #b98ae0, #8a53c4); }
-.mc-free { background: linear-gradient(180deg, #ff9ec4, #e05a92); }
+.mc-add { background: linear-gradient(180deg, var(--orange-surface), var(--orange-surface-d)); }
+.mc-sub { background: linear-gradient(180deg, var(--blue-surface), var(--blue-surface-d)); }
+.mc-timed { background: linear-gradient(180deg, var(--amber-surface), var(--amber-surface-d)); }
+.mc-dev { background: linear-gradient(180deg, var(--green-surface), var(--green-surface-d)); }
+.mc-rec { background: linear-gradient(180deg, var(--purple-surface), var(--purple-surface-d)); }
+.mc-free { background: linear-gradient(180deg, var(--pink-surface), var(--pink-surface-d)); }
 
 .install-btn {
   margin: 16px auto 0;
+  min-height: 44px;
   border: none;
   background: var(--paper);
   color: var(--ink);
@@ -308,7 +361,7 @@ body::before {
   gap: 7px;
 }
 
-.install-btn .icon { width: 18px; height: 18px; color: var(--blue-dark); }
+.install-btn .icon { width: 18px; height: 18px; color: var(--blue-text); }
 
 /* ---------- メニュー（やりかたえらび） ---------- */
 .menu {
@@ -355,20 +408,20 @@ body::before {
   word-break: keep-all;
   overflow-wrap: break-word;
 }
-.menu-small { font-size: 13px; opacity: 0.92; line-height: 1.45; word-break: keep-all; overflow-wrap: break-word; }
+.menu-small { font-size: 13px; line-height: 1.45; word-break: keep-all; overflow-wrap: break-word; }
 .menu-example {
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.22);
   border-radius: 8px;
   padding: 2px 10px;
   margin-top: 4px;
 }
 
-.menu-add { background: linear-gradient(180deg, #ffb25e, var(--orange-dark)); }
-.menu-genka { background: linear-gradient(180deg, #6cb4ff, var(--blue-dark)); }
-.menu-gengen { background: linear-gradient(180deg, #52d98a, var(--green-dark)); }
-.menu-mix { background: linear-gradient(180deg, #ff9ec7, #e05a95); }
-.menu-rec { background: linear-gradient(180deg, #b98ae0, #8a53c4); }
+.menu-add { background: linear-gradient(180deg, var(--orange-surface), var(--orange-surface-d)); }
+.menu-genka { background: linear-gradient(180deg, var(--blue-surface), var(--blue-surface-d)); }
+.menu-gengen { background: linear-gradient(180deg, var(--green-surface), var(--green-surface-d)); }
+.menu-mix { background: linear-gradient(180deg, var(--pink-surface), var(--pink-surface-d)); }
+.menu-rec { background: linear-gradient(180deg, var(--purple-surface), var(--purple-surface-d)); }
 
 /* ---------- ヘッダー ---------- */
 .simple-header {
@@ -389,7 +442,7 @@ body::before {
   vertical-align: -4px;
 }
 
-.ic-dev { color: var(--green-dark); }
+.ic-dev { color: var(--green-text); }
 .ic-timed { color: #e8a10e; }
 .ic-free { color: #e05a92; }
 
@@ -432,13 +485,15 @@ body::before {
   50% { box-shadow: 0 0 0 5px rgba(255, 126, 179, 0.3); }
 }
 
-.free-ops { display: flex; flex-direction: column; gap: 6px; }
+/* あたり判定を 44px に ひろげた ぶん、となりと かさならないよう すきまを ひろげる */
+.free-ops { display: flex; flex-direction: column; gap: 12px; }
 
 .free-op {
   border: none;
   border-radius: 12px;
   min-width: 46px;
-  min-height: 34px;
+  min-height: 36px;
+  position: relative;
   background: #eef2f7;
   color: #7b8896;
   font-family: inherit;
@@ -447,7 +502,7 @@ body::before {
   cursor: pointer;
 }
 
-.free-op.on { background: var(--blue); color: #fff; }
+.free-op.on { background: var(--blue-surface); color: #fff; }
 
 .free-eqmark, .free-ans {
   font-size: clamp(28px, 7vw, 40px);
@@ -455,7 +510,7 @@ body::before {
   color: var(--ink);
 }
 
-.free-ans { color: var(--purple); }
+.free-ans { color: var(--purple-text); }
 
 .free-keypad {
   display: grid;
@@ -480,8 +535,8 @@ body::before {
 }
 
 .free-keypad button:active { transform: translateY(3px); box-shadow: none; }
-.free-keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: clamp(15px, 3.2vmin, 20px); }
-.free-keypad .key-clear { background: #eef2f7; color: #67707e; font-size: clamp(13px, 2.8vmin, 17px); }
+.free-keypad .key-del { background: #ffe3e3; color: #c03148; font-size: clamp(15px, 3.2vmin, 20px); }
+.free-keypad .key-clear { background: #eef2f7; color: #656e7b; font-size: clamp(13px, 2.8vmin, 17px); }
 
 .free-msg {
   min-height: 22px;
@@ -508,6 +563,7 @@ body::before {
 
 .free-method-btn {
   flex: 1;
+  position: relative;
   border: 3px solid #e3e9ef;
   border-radius: 12px;
   background: #f7f9fc;
@@ -521,7 +577,7 @@ body::before {
   cursor: pointer;
 }
 
-.free-method-btn.on { border-color: var(--blue); background: #eaf4ff; color: var(--blue-dark); }
+.free-method-btn.on { border-color: var(--blue-surface); background: #eaf4ff; color: var(--blue-text); }
 
 .free-switch {
   display: flex;
@@ -593,7 +649,7 @@ body.free-mode #streak-badge { display: none; }
   min-height: clamp(52px, 9vmin, 68px);
   border: none;
   border-radius: 16px;
-  background: var(--green);
+  background: var(--green-surface);
   color: #fff;
   font-family: inherit;
   font-size: clamp(20px, 4.4vmin, 26px);
@@ -742,7 +798,7 @@ body.task-mode #explain-bar { opacity: 0.35; pointer-events: none; }
 
 #method-badge .icon { width: 14px; height: 14px; vertical-align: -2px; }
 .ic-add { color: #e0508a; }
-.ic-sub { color: var(--blue-dark); }
+.ic-sub { color: var(--blue-text); }
 
 #equation {
   position: relative;
@@ -834,7 +890,7 @@ body.timed-mode #equation {
   justify-content: center;
   font-size: clamp(20px, 5.5vw, 27px);
   font-weight: bold;
-  color: #aab;
+  color: #73738f;
 }
 
 .cherry-circle.filled {
@@ -941,10 +997,36 @@ body.timed-mode #equation {
   50% { transform: scale(1.12); }
 }
 
+/* 動きに よわい子（かんかくかびん）むけ。
+   ⚠️ .01ms であって 0 ではない。
+      0 にすると animation-fill-mode: forwards / backwards が きかなくなり、
+      「うごきを 止める」つもりが「中身を けす」ことに なる。
+      このアプリでは ブロックが とんでいく fly-away / absorb（どちらも forwards）と、
+      しきに かきそえる かず .mark-label（backwards）が それに あたる。 */
 @media (prefers-reduced-motion: reduce) {
-  .mark-loop { transition: none !important; }
-  .mark-label, .mk-strike, .mk-under { animation: none; }
-  .mk-focus { animation: none; outline: 3px solid var(--mark); outline-offset: 3px; border-radius: 0.3em; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* 紙ふぶきは 出さない（うごきの りょうが 多く、いちばん つらい演出） */
+  #confetti-layer { display: none !important; }
+  /* うごきで しめしていた「いま ここ」を、うごき ぬきで わかるようにする */
+  .mk-focus { outline: 3px solid var(--mark); outline-offset: 3px; border-radius: 0.3em; }
+}
+
+/* ハイコントラストモード。背景色が むこうに なっても
+   「ここが おせる」と わかるように わくを のこす。 */
+@media (forced-colors: active) {
+  .mode-card, .menu-btn, .icon-btn, .tab-btn, .danger-btn, .install-btn,
+  .task-auto, .explain-btn, .howto-next, .free-op, .free-method-btn,
+  #keypad button, .free-keypad button {
+    border: 2px solid ButtonText;
+  }
+  .tab-btn[aria-selected="true"], .tab-btn.active { border-width: 3px; }
+  .slot, .cherry-circle, #answer-display { border: 2px solid CanvasText; }
 }
 
 /* ---------- ブロックステージ ---------- */
@@ -1096,7 +1178,7 @@ body.timed-mode #block-stage { display: none; }
   left: 50%;
   top: -15px;
   transform: translateX(-50%);
-  background: var(--green);
+  background: var(--green-surface);
   color: #fff;
   font-size: 13px;
   font-weight: bold;
@@ -1296,7 +1378,7 @@ body.timed-mode #block-stage { display: none; }
   flex-shrink: 0;
 }
 
-#answer-display.waiting { color: #c6b8dd; }
+#answer-display.waiting { color: #8466b6; }
 
 #answer-display.shake { animation: shake 0.4s; }
 
@@ -1319,7 +1401,7 @@ body.timed-mode #block-stage { display: none; }
 #task-remain {
   font-size: clamp(14px, 3.6vw, 17px);
   font-weight: bold;
-  color: var(--blue-dark);
+  color: var(--blue-text);
   background: var(--paper);
   border-radius: 999px;
   padding: 5px 15px;
@@ -1329,6 +1411,7 @@ body.timed-mode #block-stage { display: none; }
 #task-remain b { font-size: 1.4em; color: #e0508a; }
 
 .task-auto {
+  position: relative;
   border: none;
   border-radius: 999px;
   padding: 8px 16px;
@@ -1336,7 +1419,7 @@ body.timed-mode #block-stage { display: none; }
   font-size: 14px;
   font-weight: bold;
   background: #eaf1fb;
-  color: var(--blue-dark);
+  color: var(--blue-text);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
@@ -1344,7 +1427,7 @@ body.timed-mode #block-stage { display: none; }
 .task-auto:active { transform: translateY(2px); box-shadow: none; }
 
 /* そうさちゅうは キーパッドを おやすみさせて、ブロックに 気もちを むける */
-body.task-mode #prompt { color: var(--blue-dark); }
+body.task-mode #prompt { color: var(--blue-text); }
 body.task-mode #answer-display { opacity: 0.3; }
 body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
@@ -1355,7 +1438,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
   font-weight: bold;
 }
 
-#feedback.good { color: var(--green-dark); }
+#feedback.good { color: var(--green-text); }
 #feedback.bad { color: #e0508a; }
 
 /* ---------- キーパッド ---------- */
@@ -1386,8 +1469,8 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
 #keypad button:active { transform: translateY(3px); box-shadow: none; }
 
-#keypad .key-del { background: #ffe3e3; color: #d4576b; font-size: calc(var(--key-font) - 4px); }
-#keypad .key-ok { background: var(--green); color: #fff; }
+#keypad .key-del { background: #ffe3e3; color: #c03148; font-size: calc(var(--key-font) - 4px); }
+#keypad .key-ok { background: var(--green-surface); color: #fff; }
 #keypad .key-ok .icon { width: 28px; height: 28px; stroke-width: 2.6; vertical-align: middle; }
 
 /* ---------- よこむき・タブレットの 2カラム ---------- */
@@ -1469,7 +1552,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 .big-praise {
   font-size: 32px;
   font-weight: bold;
-  color: var(--orange-dark);
+  color: var(--orange-text);
   margin-bottom: 8px;
 }
 
@@ -1485,7 +1568,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 }
 
 .howto-title {
-  background: var(--green);
+  background: var(--green-surface);
   color: #fff;
   font-weight: bold;
   font-size: 15px;
@@ -1581,7 +1664,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 .howto-next .icon { vertical-align: -3px; }
 
 .howto-next.ready {
-  background: var(--green);
+  background: var(--green-surface);
   color: #fff;
   cursor: pointer;
   animation: howto-next-in 0.3s;
@@ -1661,7 +1744,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
   font-size: 15px;
 }
 
-.result-row b { font-size: 17px; color: var(--orange-dark); }
+.result-row b { font-size: 17px; color: var(--orange-text); }
 
 /* ---------- トースト ---------- */
 #toast-area {
@@ -1701,8 +1784,8 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
 .t-amber { color: #ffb400; }
 .t-gold { color: #f4a924; }
-.t-purple { color: var(--purple); }
-.t-blue { color: var(--blue-dark); }
+.t-purple { color: var(--purple-text); }
+.t-blue { color: var(--blue-text); }
 
 .toast-mission { border-left-color: var(--green); }
 .toast-level { border-left-color: #f4a924; }
@@ -1720,6 +1803,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
 .tab-btn {
   flex: 1;
+  position: relative;
   border: none;
   border-radius: 10px;
   padding: 9px 4px;
@@ -1766,13 +1850,14 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
   line-height: 1.6;
 }
 
-.record-nums b { font-size: 19px; color: var(--orange-dark); }
+.record-nums b { font-size: 19px; color: var(--orange-text); }
 
 .danger-btn {
   margin-top: 22px;
+  min-height: 44px;
   border: none;
   background: #ffd9d9;
-  color: #c0392b;
+  color: #b53629;
   font-family: inherit;
   font-size: 15px;
   padding: 12px;
@@ -1821,7 +1906,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 .log-tile-value {
   font-size: 24px;
   font-weight: bold;
-  color: var(--orange-dark);
+  color: var(--orange-text);
   line-height: 1.2;
 }
 
@@ -1874,7 +1959,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
   background: linear-gradient(90deg, #ffd35c, #4cd07d);
 }
 
-.log-mode-pct { font-size: 14px; font-weight: bold; color: var(--green-dark); min-width: 3.2em; text-align: right; }
+.log-mode-pct { font-size: 14px; font-weight: bold; color: var(--green-text); min-width: 3.2em; text-align: right; }
 
 .log-title { font-size: 15px; margin: 18px 0 8px; }
 
@@ -1940,7 +2025,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
 .map-title .icon { width: 18px; height: 18px; vertical-align: -3px; }
 .mt-add { color: #e0508a; }
-.mt-sub { color: var(--blue-dark); }
+.mt-sub { color: var(--blue-text); }
 
 .map-scroll { overflow-x: auto; }
 
@@ -2066,7 +2151,7 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
 
 .badge-text b { font-size: 13px; display: block; }
 .badge-text small { font-size: 11px; opacity: 0.75; display: block; line-height: 1.4; }
-.badge-date { color: var(--green-dark); }
+.badge-date { color: var(--green-text); }
 
 @media (max-width: 400px) {
   .badge-list { grid-template-columns: 1fr; }
@@ -2097,4 +2182,124 @@ body.task-mode #keypad { opacity: 0.35; pointer-events: none; }
   .cherry-circle { font-size: 20px; }
   .mk-under { font-size: 19px; }
   #equation.has-under { padding-bottom: 18px; }
+}
+
+/* ---------- あたり判定だけを 44px に ひろげる（§2-9） ----------
+   実測で 44px に とどいていなかった もの。
+   .tab-btn 118.8×36 ／ .free-op 46×34 ／ .task-auto 147.9×34 ／
+   .free-method-btn 298×40.2（かくれた 状態を 出して はじめて 見つかった）
+   ヨコに ならぶ .free-method-btn は すきま 8px。上下に 2px ずつ しか
+   はみ出さないので、となりと かさならない。 */
+.tab-btn::after,
+.free-op::after,
+.free-method-btn::after,
+.task-auto::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ---------- 提示モード（電子黒板・一斉授業）§2-11 ----------
+   先生が「大きく表示」を おすと body に .presentation が つく。
+   教室の うしろの せきから 読めることが 要件なので、
+   文字も ボタンも まとめて 大きくする。
+   このアプリは 児童の 名前・出席番号を 一切 もたないため、
+   提示モードで ふせる 個人情報は ない。 */
+body.presentation { font-size: 150%; }
+
+body.presentation .mode-name   { font-size: 26px; }
+body.presentation .mode-desc   { font-size: 16px; }
+body.presentation .menu-main   { font-size: clamp(22px, 6vw, 30px); }
+body.presentation .menu-small,
+body.presentation .menu-example { font-size: 17px; }
+body.presentation .logo-text   { font-size: 27px; }
+body.presentation .mission-title,
+body.presentation .level-title { font-size: 20px; }
+body.presentation .mission-desc,
+body.presentation .day-streak  { font-size: 17px; }
+
+body.presentation .mode-card,
+body.presentation .menu-btn,
+body.presentation .explain-btn,
+body.presentation .howto-next,
+body.presentation .task-auto,
+body.presentation .danger-btn  { min-height: 64px; }
+body.presentation .icon-btn    { width: 56px; height: 56px; }
+body.presentation .icon-btn .icon { width: 28px; height: 28px; }
+body.presentation .tab-btn     { font-size: 18px; padding: 14px 6px; }
+
+body.presentation #prompt      { font-size: clamp(22px, 3.4vw, 34px); }
+body.presentation .howto-list  { font-size: clamp(18px, 2.6vw, 26px); }
+body.presentation #app         { max-width: none; }
+
+/* 大画面では よはくを いかして 主役（しき）を 大きく */
+body.presentation { --eq-font: clamp(52px, 9vw, 130px); }
+@media (min-width: 1600px) {
+  body.presentation {
+    --eq-font: clamp(64px, 8vw, 160px);
+    --slot-size: clamp(48px, 4.6vw, 76px);
+    --cherry-r: clamp(56px, 5.4vw, 88px);
+  }
+}
+
+/* おしている あいだ わかるように */
+.btn-present[aria-pressed="true"] {
+  background: var(--blue-surface);
+  color: #fff;
+}
+
+/* ---------- あたらしい ばんの おしらせ ----------
+   したに 出す ので、ホームバーの ぶんを かならず たす。 */
+.update-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 250;
+  width: min(94vw, 520px);
+  margin-bottom: calc(12px + var(--safe-b));
+  background: var(--paper);
+  border-radius: 16px;
+  border-left: 6px solid var(--orange-surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.update-text {
+  font-size: clamp(15px, 3.6vw, 17px);
+  font-weight: bold;
+  color: var(--ink);
+}
+
+.update-btn {
+  min-height: 44px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: clamp(15px, 3.6vw, 17px);
+  font-weight: bold;
+  background: var(--orange-surface);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+}
+
+.update-btn:active { transform: translateY(2px); box-shadow: none; }
+.update-btn:focus-visible { outline: 3px solid var(--blue-surface); outline-offset: 3px; }
+
+@media (forced-colors: active) {
+  .update-bar { border: 2px solid CanvasText; }
+  .update-btn { border: 2px solid ButtonText; }
 }

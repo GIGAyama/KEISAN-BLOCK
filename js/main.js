@@ -1594,10 +1594,15 @@
       const pct = r === null ? 0 : Math.round(r * 100);
       const row = document.createElement("div");
       row.className = "log-mode";
+      // ぼうの ながさは style属性では なく CSSOM で あてる。
+      // CSP の style-src 'self' は「HTML に 書かれた style属性」を とめるため、
+      // innerHTML の なかに style="width:..." と 書くと ぼうが のびなくなる。
+      // 要素の .style へ 代入する ぶんには とめられない。
       row.innerHTML =
         `<div class="log-mode-name">${m.title}<small>${m.attempted}もん といた</small></div>` +
-        `<div class="log-mode-bar"><span style="width:${pct}%"></span></div>` +
+        `<div class="log-mode-bar"><span></span></div>` +
         `<div class="log-mode-pct">${r === null ? "--" : pct + "%"}</div>`;
+      row.querySelector(".log-mode-bar span").style.width = pct + "%";
       modes.appendChild(row);
     });
 
@@ -1750,28 +1755,143 @@
   }
 
   // ---------- PWA ----------
-  let deferredInstall = null;
 
-  function setupPwa() {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => { /* オフライン非対応でも動く */ });
-    }
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredInstall = e;
-      $("#btn-install").hidden = false;
-    });
-    $("#btn-install").addEventListener("click", async () => {
-      if (!deferredInstall) return;
-      deferredInstall.prompt();
-      await deferredInstall.userChoice;
-      deferredInstall = null;
-      $("#btn-install").hidden = true;
-    });
-    window.addEventListener("appinstalled", () => {
-      $("#btn-install").hidden = true;
+  /**
+   * インストールの ボタン。
+   * 合図（beforeinstallprompt）は install-hook.js が <head> の さきで
+   * うけとって ためている。ここでは その ありなしを 見るだけ。
+   * 本体は </body> の 直前で よみこまれるため、ここで listener を つけても
+   * 合図には まにあわない（つけた ときには もう とんだ あと）。
+   *
+   * ボタンは 案内できる ときだけ 出す。
+   * 出せない ボタンを おいておくと「おしても なにも おきない」と 言われる。
+   */
+  function setupInstallButton() {
+    const btn = $("#btn-install");
+    const isStandalone = matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true;
+
+    const sync = () => {
+      btn.hidden = isStandalone || window.__pwaInstalled || !window.__pwaInstallPrompt;
+    };
+
+    window.addEventListener("pwa-install-available", sync);
+    window.addEventListener("pwa-installed", () => {
+      sync();
       toast(`${icon("download", "t-blue")}インストール ありがとう！`, "toast-badge");
     });
+
+    btn.addEventListener("click", async () => {
+      const prompt = window.__pwaInstallPrompt;
+      if (!prompt) return;
+      prompt.prompt();
+      await prompt.userChoice;
+      window.__pwaInstallPrompt = null;
+      sync();
+    });
+
+    sync();   // install-hook.js が すでに うけとって いる ばあいを ひろう
+  }
+
+  /**
+   * あたらしい ばんの おしらせ。
+   *
+   * ⚠️ controllerchange は、はじめて ひらいた ときにも とんでくる
+   *    （activate の clients.claim() で ページが 管理下に 入るため）。
+   *    これを すなおに うけると 初回訪問が かならず 1回 リロードされ、
+   *    ならべたばかりの ブロックと うちかけの こたえが きえる。
+   *
+   * ⚠️「もともと 管理下だったか」で 分ける なおし方は べつの 形で こわれる。
+   *    入れた 直後に 更新を おした ばあい、切りかわったのに 読みこみ直されない。
+   *    見るべきは「利用者が おしたか どうか」だけ。
+   */
+  function setupUpdateNotice(registration) {
+    const bar = $("#update-bar");
+    const btn = $("#btn-update");
+    let userAskedUpdate = false;
+    let reloading = false;
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!userAskedUpdate || reloading) return;
+      reloading = true;
+      location.reload();
+    });
+
+    const notify = (worker) => {
+      bar.hidden = false;
+      btn.onclick = () => {
+        userAskedUpdate = true;
+        btn.disabled = true;
+        worker.postMessage({ type: "SKIP_WAITING" });
+      };
+    };
+
+    registration.addEventListener("updatefound", () => {
+      const sw = registration.installing;
+      if (!sw) return;
+      sw.addEventListener("statechange", () => {
+        // controller が いる＝初回インストールでは なく 更新。
+        // 初回で しらせると「入れた 直後に 更新が あります」と 出て こんらんする。
+        if (sw.state === "installed" && navigator.serviceWorker.controller) notify(sw);
+      });
+    });
+
+    // まえのうちに 入っていた ばあいも ひろう
+    if (registration.waiting && navigator.serviceWorker.controller) notify(registration.waiting);
+  }
+
+  function setupPwa() {
+    setupInstallButton();
+
+    if (!("serviceWorker" in navigator)) return;
+
+    const start = () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(setupUpdateNotice)
+        .catch(() => { /* オフライン非対応でも うごく */ });
+    };
+
+    // ⚠️ ここで load を まつだけに すると、すでに load が おわって いる ばあいに
+    //    リスナーが 二度と よばれず、Service Worker が 登録されない。
+    //    かならず readyState を 見て 分ける。
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+  }
+
+  // ---------- 提示モード（電子黒板・一斉授業） ----------
+  const PRESENT_KEY = "keisan-block-present";
+
+  function applyPresentation(on) {
+    document.body.classList.toggle("presentation", on);
+    document.querySelectorAll(".btn-present").forEach((b) => {
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.innerHTML = icon(on ? "present-off" : "present");
+      b.setAttribute("aria-label", on ? "大きく表示を やめる" : "大きく表示（電子黒板）");
+    });
+  }
+
+  function setupPresentation() {
+    let on = false;
+    try { on = localStorage.getItem(PRESENT_KEY) === "1"; } catch { /* ITP などで 読めない */ }
+    applyPresentation(on);
+
+    document.querySelectorAll(".btn-present").forEach((b) => {
+      b.addEventListener("click", async () => {
+        on = !on;
+        applyPresentation(on);
+        try { localStorage.setItem(PRESENT_KEY, on ? "1" : "0"); } catch { /* 保存できなくても うごく */ }
+
+        // 電子黒板では 画面いっぱいに したい。
+        // ブラウザが ことわる ことも あるので、失敗しても 表示は 大きいままに する。
+        try {
+          if (on && !document.fullscreenElement) await document.documentElement.requestFullscreen();
+          else if (!on && document.fullscreenElement) await document.exitFullscreen();
+        } catch { /* ゆるされない ばあいは そのまま */ }
+      });
+    });
+
+    // ブラウザがわ（Esc など）で ぜんがめんを ぬけた ときは、表示の 大きさは そのまま。
+    // 「大きく表示」は ぜんがめんとは べつの 設定として あつかう。
   }
 
   // ---------- じぶんで しきを いれる がめん ----------
@@ -2088,6 +2208,7 @@
   bindFreeScreen();
   bindEvents();
   applySound();
+  setupPresentation();
   setupPwa();
   renderHome();
 })();
