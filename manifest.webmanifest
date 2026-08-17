@@ -5,9 +5,9 @@
   "lang": "ja",
   "dir": "ltr",
 
-  "id": "/KEISAN-BLOCK/",
-  "start_url": "/KEISAN-BLOCK/",
-  "scope": "/KEISAN-BLOCK/",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
 
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],

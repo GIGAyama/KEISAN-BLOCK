@@ -10,7 +10,7 @@
  */
 
 const CACHE_PREFIX  = "sansu-block-";
-const APP_VERSION   = "v9";              // ← リリースごとに かならず 上げる
+const APP_VERSION   = "v10";              // ← リリースごとに かならず 上げる
 const CACHE_STATIC  = CACHE_PREFIX + "static-" + APP_VERSION;
 const CACHE_RUNTIME = CACHE_PREFIX + "runtime-" + APP_VERSION;
 
