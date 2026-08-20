@@ -2,15 +2,17 @@
  * さんすうブロック — Service Worker（オフライン対応）
  *
  * 【重要】activate では 自アプリ以外の キャッシュを けさない。
- *   gigayama.github.io は 何十個もの アプリが おなじ オリジンを 共有している。
- *   caches.keys() を 全消しすると、ほかの アプリが オフラインで 起動しなくなる。
+ *   いまは 独自ドメイン keisan-block.giga-school.com が このアプリ せんようの
+ *   オリジンだが、旧配信元の gigayama.github.io は 何十個もの アプリが
+ *   おなじ オリジンを 共有していた。caches.keys() を 全消しする 書き方に すると、
+ *   その形に もどした とたん ほかの アプリが オフラインで 起動しなくなる。
  *   CACHE_PREFIX で はじまる キャッシュだけを そうじする。
  *
  * Service Worker は localStorage を いっさい さわらない。
  */
 
 const CACHE_PREFIX  = "sansu-block-";
-const APP_VERSION   = "v10";              // ← リリースごとに かならず 上げる
+const APP_VERSION   = "v11";              // ← リリースごとに かならず 上げる
 const CACHE_STATIC  = CACHE_PREFIX + "static-" + APP_VERSION;
 const CACHE_RUNTIME = CACHE_PREFIX + "runtime-" + APP_VERSION;
 
@@ -27,6 +29,8 @@ const PRECACHE_URLS = [
   "./js/studyLog.js",
   "./js/studySession.js",
   "./js/studyStats.js",
+  "./records-export.html",
+  "./js/records-export.js",
   "./js/main.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
@@ -75,7 +79,11 @@ self.addEventListener("fetch", (e) => {
       try {
         return await fetch(req);
       } catch {
-        return (await caches.match("./index.html"))
+        // 圏外。まず「ひらこうとした 画面 そのもの」を さがす。
+        // これを とばして index.html から かえすと、圏外では
+        // りようきやくを ひらいても アプリが 出る、という へんな 動きになる。
+        return (await caches.match(req))
+            || (await caches.match("./index.html"))
             || (await caches.match("./offline.html"))
             || Response.error();
       }
