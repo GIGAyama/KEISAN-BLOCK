@@ -50,8 +50,8 @@
     "_sourceDirectories": "A型（単一HTML完結）なので src/ が無い。ここを書かないと index.html しか見に行かず、CSS と JS に書いてある safe-area-inset も prefers-reduced-motion も localStorage.clear() も丸ごと見のがす。",
     "sourceDirectories": ["js", "css"],
 
-    "_basePath": "gigayama.github.io は多数のアプリが同一オリジンを共有している。manifest の id / scope / start_url がここから外れると、別アプリと取り違えられて『開いたら違うアプリが立ち上がる』事故が起きる。",
-    "basePath": "/KEISAN-BLOCK/",
+    "_basePath": "manifest の id / scope / start_url の期待値。独自ドメイン keisan-block.giga-school.com へ移り、アプリはドメイン直下で配信されるので \"./\"。旧構成（gigayama.github.io/KEISAN-BLOCK/）のままリポジトリ名の絶対パスを書くと、scope がページの URL を含まなくなり PWA としてインストールできなくなる。",
+    "basePath": "./",
 
     "_assetLimits": "画像の上限バイト数。アイコンだけで初回転送を占有しないための歯止め。",
     "assetLimits": {

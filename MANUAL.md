@@ -16,7 +16,7 @@
 ブラウザで次を開きます。
 
 ```
-https://gigayama.github.io/KEISAN-BLOCK/
+https://keisan-block.giga-school.com/
 ```
 
 Chromebook・iPad・Windows・スマートフォンのどれでも同じように動きます。
