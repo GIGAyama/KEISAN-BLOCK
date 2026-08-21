@@ -13,7 +13,7 @@
 
 const CACHE_PREFIX  = "sansu-block-";
 // APP_VERSION は 手で 上げません。node tools/build-sw.mjs が 先読みファイルの中身から 自動で 決めます
-const APP_VERSION = 'vce9bc27a'; /* __APP_VERSION__ */
+const APP_VERSION = 'v51bf786e'; /* __APP_VERSION__ */
 const CACHE_STATIC  = CACHE_PREFIX + "static-" + APP_VERSION;
 const CACHE_RUNTIME = CACHE_PREFIX + "runtime-" + APP_VERSION;
 
@@ -32,6 +32,7 @@ const PRECACHE_URLS = [
   "./js/studyStats.js",
   "./records-export.html",
   "./js/records-export.js",
+  "./js/records-hub-client.js",
   "./js/main.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
