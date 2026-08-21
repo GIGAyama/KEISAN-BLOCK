@@ -28,6 +28,7 @@
   img-src 'self' data: blob:;
   font-src 'self';
   connect-src 'self';
+  frame-src 'self' https://gamification.giga-school.com;
   worker-src 'self';
   manifest-src 'self';
   media-src 'self';
@@ -450,5 +451,7 @@
 <script src="js/studySession.js"></script>
 <script src="js/studyStats.js"></script>
 <script src="js/main.js"></script>
+  <!-- 学習ログを記録ハブ（まなびクエスト）へ写す。読むだけで、このアプリの記録には触れない -->
+  <script src="./js/records-hub-client.js" defer></script>
 </body>
 </html>
