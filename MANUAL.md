@@ -309,4 +309,4 @@ Chromebook・iPad・Windows・スマートフォンのどれでも同じよう�
 
 ---
 
-こまったことがあれば [GIGA山](https://note.com/cute_borage86) まで。
+こまったことがあれば [GIGA山](https://giga-school.com) まで。
