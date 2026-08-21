@@ -12,7 +12,8 @@
  */
 
 const CACHE_PREFIX  = "sansu-block-";
-const APP_VERSION   = "v11";              // ← リリースごとに かならず 上げる
+// APP_VERSION は 手で 上げません。node tools/build-sw.mjs が 先読みファイルの中身から 自動で 決めます
+const APP_VERSION = 'vce9bc27a'; /* __APP_VERSION__ */
 const CACHE_STATIC  = CACHE_PREFIX + "static-" + APP_VERSION;
 const CACHE_RUNTIME = CACHE_PREFIX + "runtime-" + APP_VERSION;
 
