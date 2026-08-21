@@ -1,6 +1,5 @@
 {
   "entryHtml": "index.html",
-
   "requiredFiles": [
     "index.html",
     "manifest.webmanifest",
@@ -15,7 +14,6 @@
     "MANUAL.md",
     "AUDIT.md"
   ],
-
   "ignoreDirectories": [
     ".git",
     ".github",
@@ -25,34 +23,30 @@
     "vendor",
     "tools"
   ],
-
   "manifest": {
     "forbiddenOauthScopes": [
       "https://www.googleapis.com/auth/drive",
       "https://mail.google.com/"
     ]
   },
-
   "securityExceptions": {
     "wildcardPostMessage": [],
     "xFrameAllowAll": []
   },
-
   "maintainability": {
     "warningLineCount": 5000,
     "warningByteCount": 400000,
     "ignoreLargeFiles": []
   },
-
   "gigaV4": {
     "enabled": true,
-
     "_sourceDirectories": "A型（単一HTML完結）なので src/ が無い。ここを書かないと index.html しか見に行かず、CSS と JS に書いてある safe-area-inset も prefers-reduced-motion も localStorage.clear() も丸ごと見のがす。",
-    "sourceDirectories": ["js", "css"],
-
+    "sourceDirectories": [
+      "js",
+      "css"
+    ],
     "_basePath": "manifest の id / scope / start_url の期待値。独自ドメイン keisan-block.giga-school.com へ移り、アプリはドメイン直下で配信されるので \"./\"。旧構成（gigayama.github.io/KEISAN-BLOCK/）のままリポジトリ名の絶対パスを書くと、scope がページの URL を含まなくなり PWA としてインストールできなくなる。",
     "basePath": "./",
-
     "_assetLimits": "画像の上限バイト数。アイコンだけで初回転送を占有しないための歯止め。",
     "assetLimits": {
       "default": 153600,
@@ -62,9 +56,14 @@
       "maskable-192.png": 30720,
       "apple-touch-icon.png": 30720
     },
-
     "_exceptions": "検査を意図的に見送る項目。ゆるめるのではなく、なぜ見送るかをここに書く。空にしておくのが望ましい。",
     "_exception_A11Y_PRINT": "このアプリは画面で操作して考えるためのもので、印刷して配る作りにしていない（MANUAL.md §6 に明記）。印刷用スタイルを入れると『印刷できる』という誤った期待を持たせる。",
-    "exceptions": ["A11Y_PRINT"]
+    "exceptions": [
+      "A11Y_PRINT"
+    ]
+  },
+  "standard": {
+    "repoName": "KEISAN-BLOCK",
+    "sw": "static"
   }
 }
