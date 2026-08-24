@@ -344,6 +344,18 @@ body::before {
 .mc-rec { background: linear-gradient(180deg, var(--purple-surface), var(--purple-surface-d)); }
 .mc-free { background: linear-gradient(180deg, var(--pink-surface), var(--pink-surface-d)); }
 
+/* ホームの いちばん下の クレジット。子どもが つかう ボタンより 目立たせない。
+   色は --ink のまま（うすい 灰色に すると、この 画面の 明るい 地に 対して
+   4.5:1 に とどかない）。小さくするのは 字の 大きさ と 透明度 だけ。 */
+.home-credit {
+  margin: 20px auto 8px;
+  font-size: 12px;
+  color: var(--ink);
+  opacity: .75;
+  text-align: center;
+}
+.home-credit a { color: inherit; }
+
 .install-btn {
   margin: 16px auto 0;
   min-height: 44px;
