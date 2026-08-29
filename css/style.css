@@ -356,6 +356,16 @@ body::before {
 }
 .home-credit a { color: inherit; }
 
+/* ⚠️ クレジットと行き先のリンクを 1 行に収める。ここを折り返させると、
+   ホームのいちばん下がそのぶん伸びる。flex-wrap: nowrap と min-width: 0 の
+   2 つが要る。nowrap だけだと、文字列が縮まずに列を押し広げて
+   横スクロールになる。狭い画面ではクレジットが … で切れる。 */
+.home-credit {
+  display: flex; flex-wrap: nowrap; align-items: center;
+  justify-content: center; gap: .2em;
+}
+.home-credit__c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .install-btn {
   margin: 16px auto 0;
   min-height: 44px;
