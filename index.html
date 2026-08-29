@@ -183,8 +183,15 @@
     <!-- ここから下は おとな向け。このアプリには フッターが 無かったので、
          ほかの アプリと 同じ クレジットの 行を ホームの いちばん下に 置く。
          紹介記事は 先生に むけて 書いて あるので、れんしゅうの 画面には 出さない。 -->
-    <p class="home-credit">© 2026 さんすうブロック
-      <a href="https://giga-school.com/apps/keisan-block/" target="_blank" rel="noopener">使い方を読む</a></p>
+    <p class="home-credit">© 2026 さんすうブロック</p>
+    <!-- ⚠️ 行き先の リンクを 手で 書かない こと。中身は 正本の 部品
+         standards/web/giga-app-links.js（配布物 web/giga-app-links.js）が
+         この 中に 出す。文言も 並びも 行き先も、あちらで 決まって いる。
+
+         ⚠️ data-links で「つかいかた」を 外して ある。この アプリには まだ
+            docs/manual/ が 無く、既定の まま 出すと 行き止まりの リンクに なる。
+            マニュアルを 書いたら、この 属性ごと 消す こと。 -->
+    <div data-giga-links data-links="terms,privacy"></div>
   </section>
 
   <!-- ============ ひきざん さくせんえらび ============ -->
@@ -454,6 +461,7 @@
 <script src="js/marks.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/studyLog.js"></script>
+<script src="web/giga-app-links.js" defer></script>
 <script src="js/studySession.js"></script>
 <script src="js/studyStats.js"></script>
 <script src="js/main.js"></script>
